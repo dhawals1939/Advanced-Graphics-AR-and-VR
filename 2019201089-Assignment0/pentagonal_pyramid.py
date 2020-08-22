@@ -155,8 +155,8 @@ class pentagonal_pyramid(moderngl_window.WindowConfig):
         self.delta_time = time - self.last_frame
         self.last_frame = time
 
-        # angle = 0.02 * time
-        # self.world = glm.rotate(self.world, glm.radians(angle), glm.vec3(1., .3, .5))
+        angle = 0.02 * time
+        self.world = glm.rotate(self.world, glm.radians(angle), glm.vec3(1., .3, .5))
         self.program['world'].write(self.world)
 
         self.view = glm.lookAt(self.camera_pos, self.camera_pos + self.camera_front, self.camera_up)
@@ -192,9 +192,9 @@ class pentagonal_pyramid(moderngl_window.WindowConfig):
                                            glm.vec3(self.world[0][3], self.world[1][3] - .1, self.world[2][3]))
             # Camera Movement
             if key == keys.INSERT:
-                self.camera_pos += camera_speed * self.camera_front;
+                self.camera_pos += camera_speed * self.camera_front
             if key == keys.DELETE:
-                self.camera_pos -= camera_speed * self.camera_front;
+                self.camera_pos -= camera_speed * self.camera_front
             if key == keys.HOME:
                 self.camera_pos -= glm.normalize(glm.cross(self.camera_front, self.camera_up)) * camera_speed
             if key == keys.END:
