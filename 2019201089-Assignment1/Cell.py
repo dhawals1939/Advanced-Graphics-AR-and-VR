@@ -1,4 +1,6 @@
-up, down, right, left = list(range(4))
+class directions():
+    up, down, right, left, not_any_direction = list(range(5))
+    not_up, not_down, not_right, not_left = list(range(4, 8))
 
 
 class Cell:

@@ -9,4 +9,5 @@ void main()
 {
     gl_Position = model * vec4(in_vert, .0, 1.0);
     out_color = in_color;
+    gl_PointSize = .3;
 }
