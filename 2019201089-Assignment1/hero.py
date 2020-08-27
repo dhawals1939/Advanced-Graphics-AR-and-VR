@@ -3,6 +3,8 @@ from stack import stack
 import math
 from util import *
 import numpy as np
+import moderngl_window
+import glm
 
 direction = directions()
 
@@ -14,7 +16,7 @@ class hero:
     rolling_status = None
     walk_status = None
     goal_ceremony_status = None
-    body_color = color(.3, .4, .6)
+    body_color = None
 
     __current_x, __current_y = None, None
     __old_x, __old_y = None, None
@@ -23,10 +25,11 @@ class hero:
 
     recursion_stack = None
     top_of_stack = None
+    program = None
 
     bat = dict()
 
-    def __init__(self, x_pos, y_pos, maze_width, maze_height):
+    def __init__(self, x_pos, y_pos, maze_width, maze_height, **kwargs):
         new_xpos, new_ypos = corrdinate_to_wrc(x_pos, maze_width), corrdinate_to_wrc(y_pos, maze_height)
         self.__old_x = self.__current_x = new_xpos
         self.__old_y = self.__current_y = new_ypos
@@ -41,6 +44,11 @@ class hero:
 
         self.init_dest = self.dest = direction.right
 
+        if 'color' in kwargs.keys():
+            self.set_body_color(kwargs['color'][0], kwargs['color'][1], kwargs['color'][2])
+        else:
+            self.set_body_color(139 / 255, 69 / 255, 19 / 255)
+
     def is_moving(self):
         return self.moving
 
@@ -50,18 +58,36 @@ class hero:
         self.rolling_status, self.moving = 0, True
 
     def move(self):
-        moving_factor = 28.5 * math.fabs(math.sin(self.degree * self.walk_status) -
-                                         math.sin(self.degree * (self.walk_status - 1)))
+        moving_factor = .1
         if self.rolling_status == roll_fact:
             if self.dest == direction.up:
                 self.__current_y += moving_factor
+            if self.dest == direction.down:
+                self.__current_y -= moving_factor
+            if self.dest == direction.left:
+                self.__current_x -= moving_factor
+            if self.dest == direction.right:
+                self.__current_x += moving_factor
 
+        if abs(self.__old_x - self.__current_x) >= .1:
+            self.__current_x = self.__old_x + (.1 if self.dest == direction.right else -.1)
+            self.__old_x = self.__current_x
+            self.moving = False
+
+        if abs(self.__old_y - self.__current_y) >= .1:
+            self.__current_y = self.__old_y + (.1 if self.dest == direction.up else -.1)
+            self.__old_y = self.__current_y
+            self.moving = False
 
     def set_body_color(self, R, G, B):
-        pass
+        self.body_color = color(R, G, B)
 
     def draw(self):
-        pass
+        model = glm.mat4(1.)
+        model = glm.scale(model, glm.vec3(.05, .05, 1))
+        # look for center
+        model = glm.translate(model, glm.vec3((self.__current_x + .1)/2, (.1 + self.__current_y)/2, .0))
+
 
     def update_status(self):
         pass
@@ -78,13 +104,13 @@ class hero:
     def draw_hero(self):
         self.bat['corrs'] = np.array(
             [
+                -.4, 0.2,
+                -.4, .4,
                 .0, .0,
-                1, -3 / 10,
-                8 / 10, -1,
-                2 / 10, -9 / 10,
-                0, 0,
-            ]
-        )
+                .0, .0,
+                .4, 0.2,
+                .4, .4
+            ])
         self.bat['primitive'] = 'POLYGON'
         color_array = np.array([[5 / 255, 225 / 255, 245 / 255] for i in range(int(len(self.bat['corrs']) / 2))])
         self.bat['color'] = np.array(np.concatenate(color_array).flat)
