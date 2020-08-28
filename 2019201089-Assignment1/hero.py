@@ -30,7 +30,7 @@ class hero:
     bat = dict()
 
     def __init__(self, x_pos, y_pos, maze_width, maze_height, **kwargs):
-        new_xpos, new_ypos = corrdinate_to_wrc(x_pos, maze_width), corrdinate_to_wrc(y_pos, maze_height)
+        new_xpos, new_ypos = coordinate_to_wrc(x_pos, maze_width), coordinate_to_wrc(y_pos, maze_height)
         self.__old_x = self.__current_x = new_xpos
         self.__old_y = self.__current_y = new_ypos
 
@@ -47,7 +47,7 @@ class hero:
         if 'color' in kwargs.keys():
             self.set_body_color(kwargs['color'][0], kwargs['color'][1], kwargs['color'][2])
         else:
-            self.set_body_color(139 / 255, 69 / 255, 19 / 255)
+            self.set_body_color(1., .2, .2)
 
     def is_moving(self):
         return self.moving
@@ -86,11 +86,18 @@ class hero:
         model = glm.mat4(1.)
         model = glm.scale(model, glm.vec3(.05, .05, 1))
         # look for center
-        model = glm.translate(model, glm.vec3((self.__current_x + .1)/2, (.1 + self.__current_y)/2, .0))
-
+        model = glm.translate(model, glm.vec3((self.__current_x + .1) / 2, (.1 + self.__current_y) / 2, .0))
+        return model
 
     def update_status(self):
-        pass
+        if self.moving:
+            self.move()
+        if self.rolling_status < roll_fact:
+            self.rolling_status += 1
+            if self.init_dest == self.dest:
+                self.rolling_status = roll_fact
+            if self.rolling_status == roll_fact:
+                self.init_dest = self.dest
 
     def current_x(self):
         return self.__current_x
@@ -102,14 +109,14 @@ class hero:
         self.get_goal = True
 
     def draw_hero(self):
-        self.bat['corrs'] = np.array(
+        self.bat['coors'] = np.array(
             [
-                -.4, 0.2,
-                -.4, .4,
+                -.5, 0.7,
+                -.25, .2,
                 .0, .0,
                 .0, .0,
-                .4, 0.2,
-                .4, .4
+                .5, 0.7,
+                .25, .2
             ])
         self.bat['primitive'] = 'POLYGON'
         color_array = np.array([[5 / 255, 225 / 255, 245 / 255] for i in range(int(len(self.bat['corrs']) / 2))])

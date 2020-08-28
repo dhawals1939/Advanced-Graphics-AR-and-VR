@@ -9,7 +9,7 @@ from color import *
 from util import *
 import random
 
-grid_sizes = [8, ]  # 10, 16]
+grid_sizes = [16, ]  # 10, 16]
 
 direction = directions()
 
@@ -23,11 +23,13 @@ class game(moderngl_window.WindowConfig):
     gl_version = (4, 3)
     window_size = (1920, 1080)
     resource_dir = Path('.').absolute()
+    aspect_ratio = 4/4
     cell = [Cell() for i in range(width * height)]
     title = 'Maze'
     horizontal_min, horizontal_max = None, None
     vertical_min, vertical_max = None, None
     gb_finder = None
+
 
     def grid_create(self):
         self.horizontal_min, self.horizontal_max = -int((width + 2) / 2 - 1), int((width + 2) / 2 - 1)
@@ -42,23 +44,23 @@ class game(moderngl_window.WindowConfig):
 
         def erase_wall(x, y, dir):
             if dir == direction.up:
-                x_val = (corrdinate_to_wrc(x, width)) * .1  # addition cause already its negative
-                y_val = (corrdinate_to_wrc(y, height) + 1) * .1
+                x_val = (coordinate_to_wrc(x, width)) * .1  # addition cause already its negative
+                y_val = (coordinate_to_wrc(y, height) + 1) * .1
 
                 self.to_remove_walls += [x_val, y_val, x_val + .1, y_val]
             if dir == direction.down:
-                x_val = (corrdinate_to_wrc(x, width)) * .1
-                y_val = (corrdinate_to_wrc(y, height)) * .1
+                x_val = (coordinate_to_wrc(x, width)) * .1
+                y_val = (coordinate_to_wrc(y, height)) * .1
 
                 self.to_remove_walls += [x_val, y_val, x_val + .1, y_val]
             if dir == direction.right:
-                x_val = (corrdinate_to_wrc(x, width) + 1) * .1
-                y_val = (corrdinate_to_wrc(y, height)) * .1
+                x_val = (coordinate_to_wrc(x, width) + 1) * .1
+                y_val = (coordinate_to_wrc(y, height)) * .1
 
                 self.to_remove_walls += [x_val, y_val, x_val, y_val + .1]
             if dir == direction.left:
-                x_val = (corrdinate_to_wrc(x, width)) * .1
-                y_val = (corrdinate_to_wrc(y, height)) * .1
+                x_val = (coordinate_to_wrc(x, width)) * .1
+                y_val = (coordinate_to_wrc(y, height)) * .1
 
                 self.to_remove_walls += [x_val, y_val, x_val, y_val + .1]
 
@@ -108,7 +110,7 @@ class game(moderngl_window.WindowConfig):
             self.to_remove_walls_vao = self.ctx.vertex_array(self.program, self.to_remove_walls_vao_content)
 
             if self.gb_finder:
-                pass
+                self.gb_finder.draw()
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -128,7 +130,7 @@ class game(moderngl_window.WindowConfig):
         self.display()
 
         self.model = glm.mat4(1.)
-        # self.model = glm.scale(self.model, glm.vec3(2, 2, 0))
+        self.model = glm.scale(self.model, glm.vec3(.5, .5, 0))
         self.program['model'].write(self.model)
 
     def render(self, time: float, frame_time: float):
