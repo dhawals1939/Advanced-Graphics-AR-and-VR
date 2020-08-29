@@ -3,11 +3,12 @@ from pathlib import Path
 import moderngl
 import numpy as np
 import glm
+import random
 
 from Cell import *
 from color import *
 from util import *
-import random
+from hero import hero
 
 grid_sizes = [16, ]  # 10, 16]
 
@@ -19,17 +20,128 @@ time_factor, zoom_factor = 20, 20
 view_change_x, view_change_y = 0, 0
 
 
+def cell_index(x, y):
+    return width * y + x
+
+
+def rand():
+    return random.randint(0, 100000)
+
+
 class game(moderngl_window.WindowConfig):
     gl_version = (4, 3)
     window_size = (1920, 1080)
     resource_dir = Path('.').absolute()
-    aspect_ratio = 4/4
+    aspect_ratio = 4 / 4
     cell = [Cell() for i in range(width * height)]
     title = 'Maze'
     horizontal_min, horizontal_max = None, None
     vertical_min, vertical_max = None, None
     gb_finder = None
+    finder = None
+    starting_x, starting_y = None, None
+    state = None
+    goal_x, goal_y = None, None
+    chosen = []
 
+    def gen_maze(self):
+        dest, length, temp = None, None, None
+        x, y = None
+        if length == width * height:
+            self.state = 0
+            for i in range(width * height):
+                self.cell[i].is_open = False
+            return
+
+        if length == 0:
+            dest = rand() % 2 + 1
+
+            if dest == direction.down:
+                self.starting_x = x = rand() % width
+                self.starting_y = y = height - 1
+                self.cell[cell_index(x, y)].road[direction.up] = True
+
+                self.goal_x = x = rand() % width
+                self.goal_y = y = 0
+                self.cell[cell_index(x, y)].road[direction.down] = True
+
+            else:
+                self.starting_x = x = width - 1
+                self.starting_y = y = rand() % height
+                self.cell[cell_index(x, y)].road[direction.right] = True
+
+                self.goal_x = x = 0
+                self.goal_y = y = rand() % height
+                self.cell[cell_index(x, y)].road[direction.left] = True
+
+            self.chosen = [0 for i in range(height * width)]
+
+            x, y = rand() % width, rand() % height
+            self.cell[cell_index(x, y)].is_open = True
+            self.chosen[0] = width * y + x
+
+            length = 1
+
+        cell_open = False
+
+        while not cell_open:
+            temp = self.chosen[rand() % length]
+            x, y = temp % width, temp % width
+
+            dest = rand() % 4
+
+            if dest == direction.up:
+                if (y == height - 1) or self.cell[cell_index(x, y + 1)].is_open:
+                    continue
+                self.cell[cell_index(x, y + 1)].is_open = True
+
+                self.cell[cell_index(x, y + 1)].road[direction.down] = True
+                self.cell[cell_index(x, y)].road[direction.up] = True
+
+                self.chosen[length] = width * (y + 1) + x
+                length += 1
+                cell_open = True
+
+            elif dest == direction.down:
+                if (y == 0) or self.cell[cell_index(x, y - 1)].is_open:
+                    continue
+                self.cell[cell_index(x, y - 1)].is_open = True
+
+                self.cell[cell_index(x, y - 1)].road[direction.up] = True
+                self.cell[cell_index(x, y)].road[direction.down] = True
+
+                self.chosen[length] = width * (y - 1) + x
+                length += 1
+                cell_open = True
+
+            elif dest == direction.right:
+                if (x == width - 1) or self.cell[cell_index(x + 1, y)].is_open:
+                    continue
+
+                self.cell[cell_index(x + 1, y)].is_open = True
+
+                self.cell[cell_index(x + 1, y)].road[direction.left] = True
+                self.cell[cell_index(x, y)].road[direction.right] = True
+
+                self.chosen[length] = width * y + x + 1
+                length += 1
+                cell_open = True
+
+            elif dest == direction.left:
+                if (x == 0) or self.cell[cell_index(x - 1, y)].is_open:
+                    continue
+
+                self.cell[cell_index(x - 1, y)].is_open = True
+
+                self.cell[cell_index(x - 1, y)].road[direction.right] = True
+                self.cell[cell_index(x, y)].road[direction.left] = True
+
+                self.chosen[length] = width * y + x - 1
+                length += 1
+                cell_open = True
+
+    def path_finder(self):
+        finder = hero(self.starting_x, self.starting_y, width, height)
 
     def grid_create(self):
         self.horizontal_min, self.horizontal_max = -int((width + 2) / 2 - 1), int((width + 2) / 2 - 1)
@@ -127,6 +239,7 @@ class game(moderngl_window.WindowConfig):
         self.to_remove_walls_vbo, self.to_remove_walls_vao, self.to_remove_walls_color_vbo = None, None, None
         self.to_remove_walls_vao_content = None
 
+        self.cell[8].road[direction.up] = True
         self.display()
 
         self.model = glm.mat4(1.)
