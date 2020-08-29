@@ -38,11 +38,12 @@ class game(moderngl_window.WindowConfig):
     horizontal_min, horizontal_max = None, None
     vertical_min, vertical_max = None, None
     gb_finder = None
-    finder = None
     starting_x, starting_y = None, None
     state = None
     goal_x, goal_y = None, None
     chosen = []
+    auto_mode = False
+    user_input_direction = -1
 
     def gen_maze(self):
         dest, length, temp = None, None, None
@@ -141,7 +142,46 @@ class game(moderngl_window.WindowConfig):
                 cell_open = True
 
     def path_finder(self):
-        finder = hero(self.starting_x, self.starting_y, width, height)
+        x, y = self.starting_x, self.starting_y
+
+        if self.gb_finder is None:
+            self.gb_finder = hero(self.starting_x, self.starting_y, width, height)
+
+        self.gb_finder.update_status()
+
+        if self.gb_finder.is_moving():
+            return
+
+        if (x == self.goal_x) and (y == self.goal_y):
+            self.state += 1
+            self.gb_finder.set_getgoal()  # finished
+            return
+
+        if self.user_input_direction > -1:
+            if self.user_input_direction == direction.up:
+                if self.cell[cell_index(x, y)].road[direction.up] and (y < height - 1) and \
+                        (not self.cell[cell_index(x, y + 1)].is_open):
+                    self.gb_finder.set_dest(direction.up)
+                    y += 1
+
+            elif self.user_input_direction == direction.down:
+                if self.cell[cell_index(x, y)].road[direction.down] and (y > 0) and \
+                        (not self.cell[cell_index(x, y - 1)].is_open):
+                    self.gb_finder.set_dest(direction.down)
+                    y -= 1
+
+            elif self.user_input_direction == direction.right:
+                if self.cell[cell_index(x, y)].road[direction.right] and (x < width - 1) and \
+                        (not self.cell[cell_index(x + 1, y)].is_open):
+                    self.gb_finder.set_dest(direction.right)
+                    x += 1
+
+            elif self.user_input_direction == direction.left:
+                if self.cell[cell_index(x, y)].road[direction.left] and (x > 0) and \
+                        (not self.cell[cell_index(x - 1, y)].is_open):
+                    self.gb_finder.set_dest(direction.left)
+                    x -= 1
+            self.user_input_direction = -1
 
     def grid_create(self):
         self.horizontal_min, self.horizontal_max = -int((width + 2) / 2 - 1), int((width + 2) / 2 - 1)
@@ -253,6 +293,30 @@ class game(moderngl_window.WindowConfig):
 
         if len(self.to_remove_walls):
             self.to_remove_walls_vao.render(moderngl.LINES)
+
+    def key_event(self, key, action, modifiers):
+        keys = self.wnd.keys
+        if action == keys.ACTION_PRESS:
+            if key == keys.W:
+                self.user_input_direction = direction.up
+            if key == keys.S:
+                self.user_input_direction = direction.down
+            if key == keys.A:
+                self.user_input_direction = direction.left
+            if key == keys.D:
+                self.user_input_direction = direction.right
+            if key == keys.PAGE_UP:
+                pass
+            if key == keys.PAGE_DOWNP:
+                pass
+            if key == keys.M:
+                for i in range(width):
+                    for j in range(1, height):
+                        self.cell[cell_index(i, j)].road[direction.down] = True
+                        self.cell[cell_index((i, j - 1))].road[direction.up] = True
+                self.gen_maze()
+        self.review_point()
+        self.display()
 
     @classmethod
     def run(cls):

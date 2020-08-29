@@ -44,10 +44,10 @@ class hero:
 
         self.init_dest = self.dest = direction.right
 
-        if 'color' in kwargs.keys():
-            self.set_body_color(kwargs['color'][0], kwargs['color'][1], kwargs['color'][2])
-        else:
-            self.set_body_color(1., .2, .2)
+        # if 'color' in kwargs.keys():
+        #     self.set_body_color(kwargs['color'][0], kwargs['color'][1], kwargs['color'][2])
+        # else:
+        #     self.set_body_color(1., .2, .2)
 
     def is_moving(self):
         return self.moving
@@ -79,8 +79,8 @@ class hero:
             self.__old_y = self.__current_y
             self.moving = False
 
-    def set_body_color(self, R, G, B):
-        self.body_color = color(R, G, B)
+    # def set_body_color(self, R, G, B):
+    #     self.body_color = color(R, G, B)
 
     def draw(self):
         model = glm.mat4(1.)
