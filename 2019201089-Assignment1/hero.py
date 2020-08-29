@@ -11,11 +11,9 @@ direction = directions()
 
 class hero:
     moving = None
-    degree = None
     eye_status = None
     rolling_status = None
     walk_status = None
-    goal_ceremony_status = None
     body_color = None
 
     __current_x, __current_y = None, None
@@ -30,19 +28,18 @@ class hero:
     bat = dict()
 
     def __init__(self, x_pos, y_pos, maze_width, maze_height, **kwargs):
-        new_xpos, new_ypos = coordinate_to_wrc(x_pos, maze_width), coordinate_to_wrc(y_pos, maze_height)
+        new_xpos, new_ypos = coordinate_to_wrc(x_pos, maze_width) * .1, coordinate_to_wrc(y_pos, maze_height) * .1
         self.__old_x = self.__current_x = new_xpos
         self.__old_y = self.__current_y = new_ypos
 
         self.recursion_stack = stack(maze_width * maze_height * 4)
         self.moving = False
-        self.walk_status, self.eye_status, self.rolling_status, self.goal_ceremony_status = 0, 0, 0, 0
-
-        self.degree = math.sin(7 * math.atan(-1) / 180)
+        self.rolling_status = 0
 
         self.draw_hero()
 
-        self.init_dest = self.dest = direction.right
+        self.init_dest = direction.right
+        self.dest = direction.right
 
         # if 'color' in kwargs.keys():
         #     self.set_body_color(kwargs['color'][0], kwargs['color'][1], kwargs['color'][2])
@@ -69,7 +66,7 @@ class hero:
             if self.dest == direction.right:
                 self.__current_x += moving_factor
 
-        if abs(self.__old_x - self.__current_x) >= .1:
+        if abs(self.__old_x - self.__current_x) >= .11:
             self.__current_x = self.__old_x + (.1 if self.dest == direction.right else -.1)
             self.__old_x = self.__current_x
             self.moving = False
@@ -84,9 +81,10 @@ class hero:
 
     def draw(self):
         model = glm.mat4(1.)
-        model = glm.scale(model, glm.vec3(.05, .05, 1))
+        model = glm.scale(model, glm.vec3(.2, .2, 1))
         # look for center
-        model = glm.translate(model, glm.vec3((self.__current_x + .1) / 2, (.1 + self.__current_y) / 2, .0))
+        model = glm.translate(model, glm.vec3(.5, .2, 0)) # center in cell
+        model = glm.translate(model, glm.vec3(self.__current_x * 10, self.__current_y* 10, .0))
         return model
 
     def update_status(self):
@@ -119,5 +117,5 @@ class hero:
                 .25, .2
             ])
         self.bat['primitive'] = 'POLYGON'
-        color_array = np.array([[5 / 255, 225 / 255, 245 / 255] for i in range(int(len(self.bat['corrs']) / 2))])
+        color_array = np.array([[255 / 255, 32 / 255, 32 / 255] for i in range(int(len(self.bat['coors']) / 2))])
         self.bat['color'] = np.array(np.concatenate(color_array).flat)
