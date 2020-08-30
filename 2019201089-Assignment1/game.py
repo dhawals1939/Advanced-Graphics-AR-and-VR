@@ -50,12 +50,6 @@ class game(moderngl_window.WindowConfig):
 
     init_time, current_time, prev_time = 0, 0, 0
 
-    life = 100
-    power = 100
-    score = 100
-
-    hero_vert_vbo, hero_color_vbo, hero_vao_content, hero_vao = None, None, None, None
-
     grid, grid_vbo, grid_vao = None, None, None
     grid_colors, grid_color_vbo = None, None
     grid_vao_content = None
@@ -65,7 +59,9 @@ class game(moderngl_window.WindowConfig):
     to_remove_walls_vao_content = None
 
     hero_path_finding_x, hero_path_finding_y = None, None
+    hero_vert_vbo, hero_color_vbo, hero_vao_content, hero_vao = None, None, None, None
 
+    power = 2
     power_up_vao = None
     powerup_x, powerup_y = None, None
     powerup_program = None
@@ -74,10 +70,59 @@ class game(moderngl_window.WindowConfig):
     obstacle_x, obstacle_y = None, None
     obstacle_program = None
 
-    enemy_path_finding_x, enemy_path_finding_y = None, None
     enemy_finder = None
+    enemy_path_finding_x, enemy_path_finding_y = None, None
     enemy_vert_vbo, enemy_color_vbo = None, None
     enemy_program, enemy_vao_content, enemy_vao = None, None, None
+
+    score_board_vert_vbo, score_board_color_vbo = None, None
+    score_board_program, score_board_vao_content, score_board_vao = None, None, None
+
+    score_1 = [
+        -.1, .0,
+        0, .1,
+        .1, .0
+    ]
+    score_2 = [
+        -.4, .0,
+        -.3, .1,
+        -.2, .0
+    ]
+    score_3 = [
+        -.7, .0,
+        -.6, .1,
+        -.5, .0
+    ]
+    score = []
+
+    def score_board(self):
+        score_board_model = glm.mat4(1.)
+        score_board_model = glm.translate(score_board_model, glm.vec3(2, 3, 0))
+        self.score_board_program['model'].write(score_board_model)
+        self.score = []
+
+        if self.power == 0:
+            self.score_board_vao = None
+            return
+        if self.power == 1:
+            self.score = self.score_1
+        if self.power == 2:
+            self.score = self.score_1 + self.score_2
+        if self.power == 3:
+            self.score = self.score_1 + self.score_2 + self.score_3
+
+        score_board_vert = np.array(self.score)
+        score_board_color = np.array(np.concatenate([[.9, .0, .0] for i in range(int(len(score_board_vert) / 2))]).flat)
+
+        self.score_board_vert_vbo = self.ctx.buffer(score_board_vert.astype('f4').tobytes())
+        self.score_board_color_vbo = self.ctx.buffer(score_board_color.astype('f4').tobytes())
+
+        self.score_board_vao_content = [
+            (self.score_board_vert_vbo, '2f', 'in_vert'),
+            (self.score_board_color_vbo, '3f', 'in_color')
+        ]
+
+        self.score_board_vao = self.ctx.vertex_array(self.score_board_program, self.score_board_vao_content)
 
     def enemy_path_finder(self):
         if self.enemy_path_finding_x is None and self.enemy_path_finding_y is None:
@@ -103,12 +148,7 @@ class game(moderngl_window.WindowConfig):
         if self.enemy_finder.is_moving():
             return
 
-        if (self.enemy_path_finding_x == self.goal_x) and (self.enemy_path_finding_y == self.goal_y):
-            self.state += 1
-            self.enemy_finder.set_getgoal()  # finished
-            return
-
-        enemy_movement_direction = rand() % 4
+        enemy_movement_direction = rand() % 10
         if enemy_movement_direction > -1:
             if enemy_movement_direction == direction.up:
                 if self.cell[cell_index(self.enemy_path_finding_x, self.enemy_path_finding_y)].road[direction.up] and (
@@ -140,10 +180,12 @@ class game(moderngl_window.WindowConfig):
                         (not self.cell[cell_index(self.enemy_path_finding_x - 1, self.enemy_path_finding_y)].is_open):
                     self.enemy_finder.set_dest(direction.left)
                     self.enemy_path_finding_x -= 1
-            enemy_movement_direction = -1
 
     def obstacle(self):
         self.obstacle_x, self.obstacle_y = rand() % width, rand() % height
+
+        while self.obstacle_x == self.powerup_x and self.obstacle_y == self.powerup_y:
+            self.obstacle_x, self.obstacle_y = rand() % width, rand() % height
 
         obstacle_vert = np.array([
             .0, -0.2,
@@ -181,6 +223,8 @@ class game(moderngl_window.WindowConfig):
 
     def power_up(self):
         self.powerup_x, self.powerup_y = rand() % width, rand() % height
+        while self.powerup_x == self.starting_x and self.powerup_y == self.powerup_y:
+            self.powerup_x, self.powerup_y = rand() % width, rand() % height
 
         powerup_vert = np.array([
             .0, 0.2,
@@ -227,6 +271,9 @@ class game(moderngl_window.WindowConfig):
 
         self.enemy_program = self.ctx.program(vertex_shader=open('./hero.vert.glsl').read(),
                                               fragment_shader=open('./maze.frag.glsl').read())
+
+        self.score_board_program = self.ctx.program(vertex_shader=open('./maze.vert.glsl').read(),
+                                                    fragment_shader=open('./maze.frag.glsl').read())
 
         self.display()
 
@@ -334,20 +381,23 @@ class game(moderngl_window.WindowConfig):
             self.hero_path_finding_x, self.hero_path_finding_y = self.starting_x, self.starting_y
 
         if self.hero_path_finding_x == self.powerup_x and self.hero_path_finding_y == self.powerup_y:
-            print('Powerup found')
+            print('Power Up found')
+            self.power += 1
             self.powerup_x, self.powerup_y = None, None
             self.power_up_vao = None
 
         if self.hero_path_finding_x == self.obstacle_x and self.hero_path_finding_y == self.obstacle_y:
-            print('Obstacle found')
+            self.power -= 1
+            print('Obstacle found', self.power)
             self.obstacle_x, self.obstacle_y = None, None
             self.obstacle_vao = None
 
         if self.hero_path_finding_x == self.enemy_path_finding_x and \
-            self.hero_path_finding_y == self.enemy_path_finding_y:
-            print('Enemy attacked and dead')
+                self.hero_path_finding_y == self.enemy_path_finding_y:
+            print('Enemy attacked and Hero died')
+            self.power = 0
+            self.hero_path_finding_x, self.hero_path_finding_y = None, None
             self.hero_vao = None
-
 
         if self.hero_finder is None:
             self.hero_finder = player(self.starting_x, self.starting_y, width, height, 'hero')
@@ -369,6 +419,7 @@ class game(moderngl_window.WindowConfig):
         if (self.hero_path_finding_x == self.goal_x) and (self.hero_path_finding_y == self.goal_y):
             self.state += 1
             self.hero_finder.set_getgoal()  # finished
+            self.enemy_vao = None
             return
 
         if self.user_input_direction > -1:
@@ -497,6 +548,7 @@ class game(moderngl_window.WindowConfig):
         if self.state == 0:
             self.gen_maze()
         elif self.state == 1:
+            self.score_board()
             self.hero_path_finder()
             if rand() % 5 == 3:
                 self.enemy_path_finder()
@@ -509,9 +561,6 @@ class game(moderngl_window.WindowConfig):
         self.maze_program['model'].write(self.model)
         self.maze_program['projection'].write(self.projection)
 
-        self.hero_program['projection'].write(self.projection)
-        self.enemy_program['projection'].write(self.projection)
-
         self.ctx.clear(background.r, background.g, background.b)
 
         self.grid_vao.render(moderngl.LINES)
@@ -520,6 +569,7 @@ class game(moderngl_window.WindowConfig):
             self.to_remove_walls_vao.render(moderngl.LINES)
 
         if self.hero_vao:
+            self.hero_program['projection'].write(self.projection)
             self.hero_vao.render()
 
         if self.power_up_vao:
@@ -530,8 +580,13 @@ class game(moderngl_window.WindowConfig):
             self.obstacle_program['projection'].write(self.projection)
             self.obstacle_vao.render()
 
-        if self.enemy_finder:
+        if self.enemy_vao:
+            self.enemy_program['projection'].write(self.projection)
             self.enemy_vao.render()
+
+        if self.score_board_vao:
+            self.score_board_program['projection'].write(self.projection)
+            self.score_board_vao.render()
 
     def key_event(self, key, action, modifiers):
         keys = self.wnd.keys
