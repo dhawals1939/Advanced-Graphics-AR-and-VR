@@ -10,7 +10,7 @@ from color import *
 from util import *
 from hero import hero
 
-grid_sizes = [8, 10, 16]
+grid_sizes = [8, 12, 16]
 
 direction = directions()
 
@@ -30,14 +30,14 @@ def rand():
 
 class game(moderngl_window.WindowConfig):
     gl_version = (4, 3)
-    window_size = (500, 500)
+    window_size = (1920, 1080)
     resource_dir = Path('.').absolute()
     aspect_ratio = 4 / 4
     cell = [Cell() for i in range(width * height)]
     title = 'Maze'
     horizontal_min, horizontal_max = None, None
     vertical_min, vertical_max = None, None
-    gb_finder = None
+    hero_finder = None
     starting_x, starting_y = None, None
     state = -1
     goal_x, goal_y = None, None
@@ -48,6 +48,12 @@ class game(moderngl_window.WindowConfig):
     length = 0
     model, projection = glm.mat4(1.), glm.mat4(1.)
 
+    init_time, current_time = 0, 0
+
+    life = 100
+    power = 100
+    score = 100
+
     hero_vert_vbo, hero_color_vbo, hero_vao_content, hero_vao = None, None, None, None
 
     grid, grid_vbo, grid_vao = None, None, None
@@ -57,9 +63,91 @@ class game(moderngl_window.WindowConfig):
     to_remove_walls = []
     to_remove_walls_vbo, to_remove_walls_vao, to_remove_walls_color_vbo = None, None, None
     to_remove_walls_vao_content = None
-    hero_projection= glm.mat4(1.)
+    hero_projection = glm.mat4(1.)
 
-    path_finding_x, path_finding_y = None, None
+    hero_path_finding_x, hero_path_finding_y = None, None
+
+    power_up_vao = None
+    powerup_x, powerup_y = None, None
+    powerup_program = None
+
+    obstacle_vao = None
+    obstacle_x, obstacle_y = None, None
+    obstacle_program = None
+
+    def obstacle(self):
+        self.obstacle_x, self.obstacle_y = rand() % width, rand() % height
+
+        obstacle_vert = np.array([
+            .0, -0.2,
+            -.1, 0,
+            .1, 0
+        ])
+
+        obstacle_color = np.array(
+            [
+                .0, .0, .9,
+                .0, .0, .9,
+                .0, .0, .9,
+            ]
+        )
+        obstacle_vert_vbo = self.ctx.buffer(obstacle_vert.astype('f4').tobytes())
+        obstacle_color_vbo = self.ctx.buffer(obstacle_color.astype('f4').tobytes())
+
+        obstacle_vao_content = [
+            (obstacle_vert_vbo, '2f', 'in_vert'),
+            (obstacle_color_vbo, '3f', 'in_color')
+        ]
+
+        self.obstacle_program = self.ctx.program(vertex_shader=open('maze.vert.glsl').read(),
+                                                 fragment_shader=open('maze.frag.glsl').read())
+
+        self.obstacle_vao = self.ctx.vertex_array(self.obstacle_program, obstacle_vao_content)
+
+        obstacle_model = glm.mat4(1.)
+        obstacle_model = glm.scale(obstacle_model, glm.vec3(.2, .2, 1))
+        # look for center
+        obstacle_model = glm.translate(obstacle_model, glm.vec3(.5, .5, 0))  # center in cell
+        obstacle_model = glm.translate(obstacle_model, glm.vec3(coordinate_to_wrc(self.obstacle_x, width),
+                                                                coordinate_to_wrc(self.obstacle_y, height), .0))
+        self.obstacle_program['model'].write(obstacle_model)
+
+    def power_up(self):
+        self.powerup_x, self.powerup_y = rand() % width, rand() % height
+
+        powerup_vert = np.array([
+            .0, 0.2,
+            -.1, 0,
+            .1, 0
+        ])
+
+        powerup_color = np.array(
+            [
+                .9, .0, .0,
+                .9, .0, .0,
+                .9, .0, .0,
+            ]
+        )
+        powerup_vert_vbo = self.ctx.buffer(powerup_vert.astype('f4').tobytes())
+        powerup_color_vbo = self.ctx.buffer(powerup_color.astype('f4').tobytes())
+
+        powerup_vao_content = [
+            (powerup_vert_vbo, '2f', 'in_vert'),
+            (powerup_color_vbo, '3f', 'in_color')
+        ]
+
+        self.powerup_program = self.ctx.program(vertex_shader=open('maze.vert.glsl').read(),
+                                                fragment_shader=open('maze.frag.glsl').read())
+
+        self.power_up_vao = self.ctx.vertex_array(self.powerup_program, powerup_vao_content)
+
+        powerup_model = glm.mat4(1.)
+        powerup_model = glm.scale(powerup_model, glm.vec3(.2, .2, 1))
+        # look for center
+        powerup_model = glm.translate(powerup_model, glm.vec3(0.5, 0.5, 0))  # center in cell
+        powerup_model = glm.translate(powerup_model, glm.vec3(coordinate_to_wrc(self.powerup_x, width),
+                                                              coordinate_to_wrc(self.powerup_y, height), .0))
+        self.powerup_program['model'].write(powerup_model)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -70,12 +158,10 @@ class game(moderngl_window.WindowConfig):
         self.hero_program = self.ctx.program(vertex_shader=open('./hero.vert.glsl').read(),
                                              fragment_shader=open('./maze.frag.glsl').read())
 
-
         self.display()
 
         self.model = glm.mat4(1.)
         self.model = glm.scale(self.model, glm.vec3(2, 2, 0))
-
 
     def gen_maze(self):
         dest, temp = None, None
@@ -173,15 +259,25 @@ class game(moderngl_window.WindowConfig):
                 self.length += 1
                 cell_open = True
 
-    def path_finder(self):
-        if self.path_finding_x is None and self.path_finding_y is None:
-            self.path_finding_x, self.path_finding_y = self.starting_x, self.starting_y
+    def hero_path_finder(self):
+        if self.hero_path_finding_x is None and self.hero_path_finding_y is None:
+            self.hero_path_finding_x, self.hero_path_finding_y = self.starting_x, self.starting_y
 
-        if self.gb_finder is None:
-            self.gb_finder = hero(self.starting_x, self.starting_y, width, height)
+        if self.hero_path_finding_x == self.powerup_x and self.hero_path_finding_y == self.powerup_y:
+            print('Powerup found')
+            self.powerup_x, self.powerup_y = None, None
+            self.power_up_vao = None
 
-            self.hero_vert_vbo = self.ctx.buffer(self.gb_finder.bat['coors'].astype('f4').tobytes())
-            self.hero_color_vbo = self.ctx.buffer(self.gb_finder.bat['color'].astype('f4').tobytes())
+        if self.hero_path_finding_x == self.obstacle_x and self.hero_path_finding_y == self.obstacle_y:
+            print('Obstacle found')
+            self.obstacle_x, self.obstacle_y = None, None
+            self.obstacle_vao = None
+
+        if self.hero_finder is None:
+            self.hero_finder = hero(self.starting_x, self.starting_y, width, height)
+
+            self.hero_vert_vbo = self.ctx.buffer(self.hero_finder.bat['coors'].astype('f4').tobytes())
+            self.hero_color_vbo = self.ctx.buffer(self.hero_finder.bat['color'].astype('f4').tobytes())
 
             self.hero_vao_content = [
                 (self.hero_vert_vbo, '2f', 'in_vert'),
@@ -190,40 +286,44 @@ class game(moderngl_window.WindowConfig):
 
             self.hero_vao = self.ctx.vertex_array(self.hero_program, self.hero_vao_content)
 
-        self.gb_finder.update_status()
+        self.hero_finder.update_status()
 
-        if self.gb_finder.is_moving():
+        if self.hero_finder.is_moving():
             return
 
-        if (self.path_finding_x == self.goal_x) and (self.path_finding_y == self.goal_y):
+        if (self.hero_path_finding_x == self.goal_x) and (self.hero_path_finding_y == self.goal_y):
             self.state += 1
-            self.gb_finder.set_getgoal()  # finished
+            self.hero_finder.set_getgoal()  # finished
             return
 
         if self.user_input_direction > -1:
             if self.user_input_direction == direction.up:
-                if self.cell[cell_index(self.path_finding_x, self.path_finding_y)].road[direction.up] and (self.path_finding_y < height - 1) and \
-                        (not self.cell[cell_index(self.path_finding_x, self.path_finding_y + 1)].is_open):
-                    self.gb_finder.set_dest(direction.up)
-                    self.path_finding_y += 1
+                if self.cell[cell_index(self.hero_path_finding_x, self.hero_path_finding_y)].road[direction.up] and (
+                        self.hero_path_finding_y < height - 1) and \
+                        (not self.cell[cell_index(self.hero_path_finding_x, self.hero_path_finding_y + 1)].is_open):
+                    self.hero_finder.set_dest(direction.up)
+                    self.hero_path_finding_y += 1
 
             elif self.user_input_direction == direction.down:
-                if self.cell[cell_index(self.path_finding_x, self.path_finding_y)].road[direction.down] and (self.path_finding_y > 0) and \
-                        (not self.cell[cell_index(self.path_finding_x, self.path_finding_y - 1)].is_open):
-                    self.gb_finder.set_dest(direction.down)
-                    self.path_finding_y -= 1
+                if self.cell[cell_index(self.hero_path_finding_x, self.hero_path_finding_y)].road[direction.down] and (
+                        self.hero_path_finding_y > 0) and \
+                        (not self.cell[cell_index(self.hero_path_finding_x, self.hero_path_finding_y - 1)].is_open):
+                    self.hero_finder.set_dest(direction.down)
+                    self.hero_path_finding_y -= 1
 
             elif self.user_input_direction == direction.right:
-                if self.cell[cell_index(self.path_finding_x, self.path_finding_y)].road[direction.right] and (self.path_finding_x < width - 1) and \
-                        (not self.cell[cell_index(self.path_finding_x + 1, self.path_finding_y)].is_open):
-                    self.gb_finder.set_dest(direction.right)
-                    self.path_finding_x += 1
+                if self.cell[cell_index(self.hero_path_finding_x, self.hero_path_finding_y)].road[direction.right] and (
+                        self.hero_path_finding_x < width - 1) and \
+                        (not self.cell[cell_index(self.hero_path_finding_x + 1, self.hero_path_finding_y)].is_open):
+                    self.hero_finder.set_dest(direction.right)
+                    self.hero_path_finding_x += 1
 
             elif self.user_input_direction == direction.left:
-                if self.cell[cell_index(self.path_finding_x, self.path_finding_y)].road[direction.left] and (self.path_finding_x > 0) and \
-                        (not self.cell[cell_index(self.path_finding_x - 1, self.path_finding_y)].is_open):
-                    self.gb_finder.set_dest(direction.left)
-                    self.path_finding_x -= 1
+                if self.cell[cell_index(self.hero_path_finding_x, self.hero_path_finding_y)].road[direction.left] and (
+                        self.hero_path_finding_x > 0) and \
+                        (not self.cell[cell_index(self.hero_path_finding_x - 1, self.hero_path_finding_y)].is_open):
+                    self.hero_finder.set_dest(direction.left)
+                    self.hero_path_finding_x -= 1
             self.user_input_direction = -1
 
     def grid_create(self):
@@ -301,19 +401,25 @@ class game(moderngl_window.WindowConfig):
 
             self.to_remove_walls_vao = self.ctx.vertex_array(self.maze_program, self.to_remove_walls_vao_content)
 
-            if self.gb_finder:
-                self.hero_program['model'].write(self.gb_finder.draw())
+            if self.hero_finder:
+                self.hero_program['model'].write(
+                    self.hero_finder.draw(self.state > 1, self.current_time - self.init_time))
 
     def render(self, time: float, frame_time: float):
+
+        if self.init_time == 0:
+            self.init_time = time
+
+        self.current_time = time
 
         if self.state == 0:
             self.gen_maze()
         elif self.state == 1:
-            self.path_finder()
+            self.hero_path_finder()
             self.review_point()
         elif self.state > 1:
-            print('Reached Goal')
-            exit(0)
+            # exit(0)
+            pass
 
         self.display()
         self.maze_program['model'].write(self.model)
@@ -328,8 +434,16 @@ class game(moderngl_window.WindowConfig):
         if len(self.to_remove_walls):
             self.to_remove_walls_vao.render(moderngl.LINES)
 
-        if self.gb_finder:
+        if self.hero_finder:
             self.hero_vao.render()
+
+        if self.power_up_vao:
+            self.powerup_program['projection'].write(self.projection)
+            self.power_up_vao.render()
+
+        if self.obstacle_vao:
+            self.obstacle_program['projection'].write(self.projection)
+            self.obstacle_vao.render()
 
     def key_event(self, key, action, modifiers):
         keys = self.wnd.keys
@@ -356,16 +470,18 @@ class game(moderngl_window.WindowConfig):
                 self.gen_maze()
             if key == keys.SPACE:  # starts Maze
                 self.state = 0
+                self.power_up()
+                self.obstacle()
         self.review_point()
         self.display()
 
     def review_point(self):
-        if self.gb_finder is None:
+        if self.hero_finder is None:
             return
-        view_left = self.gb_finder.current_x() - (self.view_zoomfactor)
-        view_right = self.gb_finder.current_x() + self.view_zoomfactor
-        view_bottom = self.gb_finder.current_y() - (self.view_zoomfactor)
-        view_up = self.gb_finder.current_y() + self.view_zoomfactor
+        view_left = self.hero_finder.current_x() - (self.view_zoomfactor)
+        view_right = self.hero_finder.current_x() + self.view_zoomfactor
+        view_bottom = self.hero_finder.current_y() - (self.view_zoomfactor)
+        view_up = self.hero_finder.current_y() + self.view_zoomfactor
 
         self.hero_projection = glm.ortho(view_left, view_right, view_bottom, view_up)
         self.projection = glm.ortho(view_left, view_right, view_bottom, view_up)

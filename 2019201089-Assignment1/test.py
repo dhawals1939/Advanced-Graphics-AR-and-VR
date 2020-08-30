@@ -11,9 +11,21 @@ class triangle(moderngl_window.WindowConfig):
     resizable = True
     aspect_ratio = 16 / 9
     window_size = (1920, 1080)
+    text_shader = None
+
+
+    def text(self, location, scale, color, text):
+        self.text_shader['textColor'].write(color)
+
+        self
+
+
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+
+        self.ctx.enable(moderngl.CULL_FACE)
+        self.ctx.enable(moderngl.BLEND)
 
         vertices = np.array([
             -.5, 0.7,
@@ -27,6 +39,13 @@ class triangle(moderngl_window.WindowConfig):
             vertex_shader=open('maze.vert.glsl').read(),
             fragment_shader=open('maze.frag.glsl').read()
         )
+
+        self.text_shader = self.ctx.program(vertex_shader=open('./text.vert.glsl').read(),
+                                             fragment_shader=open('./text.frag.glsl').read())
+
+
+
+
         color = np.array([
             1., .2, .2,
             1., .2, .2,
@@ -67,6 +86,12 @@ class triangle(moderngl_window.WindowConfig):
 
 
     def render(self, time: float, frame_time: float):
+
+        word = 'rtart'
+        x,y = 0, 0
+        scale=0
+        color = glm.vec3(1., .0, .0)
+        self.text((x, y), scale, word, color)
         self.ctx.clear(.0, .0, .0)
 
         if self.points:

@@ -4,7 +4,6 @@ def coordinate_to_wrc(x, directional_extreme):
 
 
 roll_fact = 10
-init_time_factor = 20
 
 
 class directions:

@@ -27,7 +27,7 @@ class hero:
 
     bat = dict()
 
-    def __init__(self, x_pos, y_pos, maze_width, maze_height, **kwargs):
+    def __init__(self, x_pos, y_pos, maze_width, maze_height):
         new_xpos, new_ypos = coordinate_to_wrc(x_pos, maze_width) * .1, coordinate_to_wrc(y_pos, maze_height) * .1
         self.__old_x = self.__current_x = new_xpos
         self.__old_y = self.__current_y = new_ypos
@@ -40,11 +40,6 @@ class hero:
 
         self.init_dest = direction.right
         self.dest = direction.right
-
-        # if 'color' in kwargs.keys():
-        #     self.set_body_color(kwargs['color'][0], kwargs['color'][1], kwargs['color'][2])
-        # else:
-        #     self.set_body_color(1., .2, .2)
 
     def is_moving(self):
         return self.moving
@@ -66,7 +61,7 @@ class hero:
             if self.dest == direction.right:
                 self.__current_x += moving_factor
 
-        if abs(self.__old_x - self.__current_x) >= .11:
+        if abs(self.__old_x - self.__current_x) >= .1:
             self.__current_x = self.__old_x + (.1 if self.dest == direction.right else -.1)
             self.__old_x = self.__current_x
             self.moving = False
@@ -76,15 +71,15 @@ class hero:
             self.__old_y = self.__current_y
             self.moving = False
 
-    # def set_body_color(self, R, G, B):
-    #     self.body_color = color(R, G, B)
-
-    def draw(self):
+    def draw(self, goal_reached, degree):
         model = glm.mat4(1.)
         model = glm.scale(model, glm.vec3(.2, .2, 1))
         # look for center
         model = glm.translate(model, glm.vec3(.5, .2, 0)) # center in cell
-        model = glm.translate(model, glm.vec3(self.__current_x * 10, self.__current_y* 10, .0))
+        model = glm.translate(model, glm.vec3(self.__current_x * 10, self.__current_y * 10, .0))
+        if goal_reached:
+            model = glm.scale(model, glm.vec3(.5, .5, 1))
+            model = glm.rotate(model, glm.radians(degree * 50), glm.vec3(0, 0, 1.))
         return model
 
     def update_status(self):
