@@ -70,6 +70,10 @@ class game(moderngl_window.WindowConfig):
     obstacle_x, obstacle_y = None, None
     obstacle_program = None
 
+    bomb_vao = None
+    bomb_x, bomb_y = None, None
+    bomb_program = None
+
     enemy_finder = None
     enemy_path_finding_x, enemy_path_finding_y = None, None
     enemy_vert_vbo, enemy_color_vbo = None, None
@@ -97,7 +101,7 @@ class game(moderngl_window.WindowConfig):
 
     def score_board(self):
         score_board_model = glm.mat4(1.)
-        score_board_model = glm.translate(score_board_model, glm.vec3(2, 3, 0))
+        score_board_model = glm.translate(score_board_model, glm.vec3(2, 2, 0))
         self.score_board_program['model'].write(score_board_model)
         self.score = []
 
@@ -220,6 +224,52 @@ class game(moderngl_window.WindowConfig):
         obstacle_model = glm.translate(obstacle_model, glm.vec3(coordinate_to_wrc(self.obstacle_x, width),
                                                                 coordinate_to_wrc(self.obstacle_y, height), .0))
         self.obstacle_program['model'].write(obstacle_model)
+
+    def bomb(self):
+        self.bomb_x, self.bomb_y = rand() % width, rand() % height
+
+        while self.bomb_x == self.powerup_x and self.bomb_y == self.powerup_y:
+            self.bomb_x, self.bomb_y = rand() % width, rand() % height
+
+        bomb_vert = np.array([
+            .0, -0.2,
+            -.1, 0,
+            .1, 0,
+            .0, 0.2,
+            -.1, 0,
+            .1, 0
+        ])
+
+        bomb_color = np.array(
+            [
+                .0, .9, .0,
+                .0, .9, .0,
+                .0, .9, .0,
+                .0, .9, .0,
+                .0, .9, .0,
+                .0, .9, .0,
+            ]
+        )
+        bomb_vert_vbo = self.ctx.buffer(bomb_vert.astype('f4').tobytes())
+        bomb_color_vbo = self.ctx.buffer(bomb_color.astype('f4').tobytes())
+
+        bomb_vao_content = [
+            (bomb_vert_vbo, '2f', 'in_vert'),
+            (bomb_color_vbo, '3f', 'in_color')
+        ]
+
+        self.bomb_program = self.ctx.program(vertex_shader=open('maze.vert.glsl').read(),
+                                             fragment_shader=open('maze.frag.glsl').read())
+
+        self.bomb_vao = self.ctx.vertex_array(self.bomb_program, bomb_vao_content)
+
+        bomb_model = glm.mat4(1.)
+        bomb_model = glm.scale(bomb_model, glm.vec3(.2, .2, 1))
+        # look for center
+        bomb_model = glm.translate(bomb_model, glm.vec3(.5, .5, 0))  # center in cell
+        bomb_model = glm.translate(bomb_model, glm.vec3(coordinate_to_wrc(self.bomb_x, width),
+                                                        coordinate_to_wrc(self.bomb_y, height), .0))
+        self.bomb_program['model'].write(bomb_model)
 
     def power_up(self):
         self.powerup_x, self.powerup_y = rand() % width, rand() % height
@@ -399,6 +449,16 @@ class game(moderngl_window.WindowConfig):
             self.hero_path_finding_x, self.hero_path_finding_y = None, None
             self.hero_vao = None
 
+        if self.hero_path_finding_x == self.bomb_x and self.hero_path_finding_y == self.bomb_y:
+            print('Found Bomb')
+            self.bomb_y, self.bomb_x = None, None
+            self.bomb_vao = None
+            for i in range(width):
+                for j in range(1, height):
+                    self.cell[cell_index(i, j)].road[direction.down] = True
+                    self.cell[cell_index(i, j - 1)].road[direction.up] = True
+            self.gen_maze()
+
         if self.hero_finder is None:
             self.hero_finder = player(self.starting_x, self.starting_y, width, height, 'hero')
 
@@ -568,6 +628,10 @@ class game(moderngl_window.WindowConfig):
         if len(self.to_remove_walls):
             self.to_remove_walls_vao.render(moderngl.LINES)
 
+        if self.bomb_vao:
+            self.bomb_program['projection'].write(self.projection)
+            self.bomb_vao.render()
+
         if self.hero_vao:
             self.hero_program['projection'].write(self.projection)
             self.hero_vao.render()
@@ -605,16 +669,11 @@ class game(moderngl_window.WindowConfig):
             if key == keys.PAGE_DOWN:
                 if self.view_zoomfactor < width:
                     self.view_zoomfactor += 1
-            if key == keys.M:
-                for i in range(width):
-                    for j in range(1, height):
-                        self.cell[cell_index(i, j)].road[direction.down] = True
-                        self.cell[cell_index(i, j - 1)].road[direction.up] = True
-                self.gen_maze()
             if key == keys.SPACE:  # starts Maze
                 self.state = 0
                 self.power_up()
                 self.obstacle()
+                self.bomb()
         self.review_point()
         self.display()
 
