@@ -8,7 +8,7 @@ import random
 from Cell import *
 from color import *
 from util import *
-from hero import hero
+from player import player
 
 grid_sizes = [8, 12, 16]
 
@@ -48,7 +48,7 @@ class game(moderngl_window.WindowConfig):
     length = 0
     model, projection = glm.mat4(1.), glm.mat4(1.)
 
-    init_time, current_time = 0, 0
+    init_time, current_time, prev_time = 0, 0, 0
 
     life = 100
     power = 100
@@ -63,7 +63,6 @@ class game(moderngl_window.WindowConfig):
     to_remove_walls = []
     to_remove_walls_vbo, to_remove_walls_vao, to_remove_walls_color_vbo = None, None, None
     to_remove_walls_vao_content = None
-    hero_projection = glm.mat4(1.)
 
     hero_path_finding_x, hero_path_finding_y = None, None
 
@@ -74,6 +73,74 @@ class game(moderngl_window.WindowConfig):
     obstacle_vao = None
     obstacle_x, obstacle_y = None, None
     obstacle_program = None
+
+    enemy_path_finding_x, enemy_path_finding_y = None, None
+    enemy_finder = None
+    enemy_vert_vbo, enemy_color_vbo = None, None
+    enemy_program, enemy_vao_content, enemy_vao = None, None, None
+
+    def enemy_path_finder(self):
+        if self.enemy_path_finding_x is None and self.enemy_path_finding_y is None:
+            self.enemy_path_finding_x, self.enemy_path_finding_y = rand() % width, rand() % height
+            while self.enemy_path_finding_x == self.starting_x and self.enemy_path_finding_y == self.starting_y:
+                self.enemy_path_finding_x, self.enemy_path_finding_y = rand() % width, rand() % height
+
+        if self.enemy_finder is None:
+            self.enemy_finder = player(self.enemy_path_finding_x, self.enemy_path_finding_y, width, height, 'enemy')
+
+            self.enemy_vert_vbo = self.ctx.buffer(self.enemy_finder.player_body['coors'].astype('f4').tobytes())
+            self.enemy_color_vbo = self.ctx.buffer(self.enemy_finder.player_body['color'].astype('f4').tobytes())
+
+            self.enemy_vao_content = [
+                (self.enemy_vert_vbo, '2f', 'in_vert'),
+                (self.enemy_color_vbo, '3f', 'in_color')
+            ]
+
+            self.enemy_vao = self.ctx.vertex_array(self.enemy_program, self.enemy_vao_content)
+
+        self.enemy_finder.update_status()
+
+        if self.enemy_finder.is_moving():
+            return
+
+        if (self.enemy_path_finding_x == self.goal_x) and (self.enemy_path_finding_y == self.goal_y):
+            self.state += 1
+            self.enemy_finder.set_getgoal()  # finished
+            return
+
+        enemy_movement_direction = rand() % 4
+        if enemy_movement_direction > -1:
+            if enemy_movement_direction == direction.up:
+                if self.cell[cell_index(self.enemy_path_finding_x, self.enemy_path_finding_y)].road[direction.up] and (
+                        self.enemy_path_finding_y < height - 1) and \
+                        (not self.cell[cell_index(self.enemy_path_finding_x, self.enemy_path_finding_y + 1)].is_open):
+                    self.enemy_finder.set_dest(direction.up)
+                    self.enemy_path_finding_y += 1
+
+            elif enemy_movement_direction == direction.down:
+                if self.cell[cell_index(self.enemy_path_finding_x, self.enemy_path_finding_y)].road[
+                    direction.down] and (
+                        self.enemy_path_finding_y > 0) and \
+                        (not self.cell[cell_index(self.enemy_path_finding_x, self.enemy_path_finding_y - 1)].is_open):
+                    self.enemy_finder.set_dest(direction.down)
+                    self.enemy_path_finding_y -= 1
+
+            elif enemy_movement_direction == direction.right:
+                if self.cell[cell_index(self.enemy_path_finding_x, self.enemy_path_finding_y)].road[
+                    direction.right] and (
+                        self.enemy_path_finding_x < width - 1) and \
+                        (not self.cell[cell_index(self.enemy_path_finding_x + 1, self.enemy_path_finding_y)].is_open):
+                    self.enemy_finder.set_dest(direction.right)
+                    self.enemy_path_finding_x += 1
+
+            elif enemy_movement_direction == direction.left:
+                if self.cell[cell_index(self.enemy_path_finding_x, self.enemy_path_finding_y)].road[
+                    direction.left] and (
+                        self.enemy_path_finding_x > 0) and \
+                        (not self.cell[cell_index(self.enemy_path_finding_x - 1, self.enemy_path_finding_y)].is_open):
+                    self.enemy_finder.set_dest(direction.left)
+                    self.enemy_path_finding_x -= 1
+            enemy_movement_direction = -1
 
     def obstacle(self):
         self.obstacle_x, self.obstacle_y = rand() % width, rand() % height
@@ -157,6 +224,9 @@ class game(moderngl_window.WindowConfig):
 
         self.hero_program = self.ctx.program(vertex_shader=open('./hero.vert.glsl').read(),
                                              fragment_shader=open('./maze.frag.glsl').read())
+
+        self.enemy_program = self.ctx.program(vertex_shader=open('./hero.vert.glsl').read(),
+                                              fragment_shader=open('./maze.frag.glsl').read())
 
         self.display()
 
@@ -273,16 +343,21 @@ class game(moderngl_window.WindowConfig):
             self.obstacle_x, self.obstacle_y = None, None
             self.obstacle_vao = None
 
+        if self.hero_path_finding_x == self.enemy_path_finding_x and \
+            self.hero_path_finding_y == self.enemy_path_finding_y:
+            print('Enemy attacked and dead')
+            self.hero_vao = None
+
+
         if self.hero_finder is None:
-            self.hero_finder = hero(self.starting_x, self.starting_y, width, height)
+            self.hero_finder = player(self.starting_x, self.starting_y, width, height, 'hero')
 
-            self.hero_vert_vbo = self.ctx.buffer(self.hero_finder.bat['coors'].astype('f4').tobytes())
-            self.hero_color_vbo = self.ctx.buffer(self.hero_finder.bat['color'].astype('f4').tobytes())
+            self.hero_vert_vbo = self.ctx.buffer(self.hero_finder.player_body['coors'].astype('f4').tobytes())
+            self.hero_color_vbo = self.ctx.buffer(self.hero_finder.player_body['color'].astype('f4').tobytes())
 
-            self.hero_vao_content = [
-                (self.hero_vert_vbo, '2f', 'in_vert'),
-                (self.hero_color_vbo, '3f', 'in_color')
-            ]
+            self.hero_vao_content = [(self.hero_vert_vbo, '2f', 'in_vert'),
+                                     (self.hero_color_vbo, '3f', 'in_color')
+                                     ]
 
             self.hero_vao = self.ctx.vertex_array(self.hero_program, self.hero_vao_content)
 
@@ -405,17 +480,26 @@ class game(moderngl_window.WindowConfig):
                 self.hero_program['model'].write(
                     self.hero_finder.draw(self.state > 1, self.current_time - self.init_time))
 
+            if self.enemy_finder:
+                self.enemy_program['model'].write(
+                    self.enemy_finder.draw(self.state > 1, self.current_time - self.init_time)
+                )
+
     def render(self, time: float, frame_time: float):
 
         if self.init_time == 0:
             self.init_time = time
+            self.prev_time = self.init_time
 
+        self.prev_time = self.current_time
         self.current_time = time
 
         if self.state == 0:
             self.gen_maze()
         elif self.state == 1:
             self.hero_path_finder()
+            if rand() % 5 == 3:
+                self.enemy_path_finder()
             self.review_point()
         elif self.state > 1:
             # exit(0)
@@ -425,7 +509,8 @@ class game(moderngl_window.WindowConfig):
         self.maze_program['model'].write(self.model)
         self.maze_program['projection'].write(self.projection)
 
-        self.hero_program['projection'].write(self.hero_projection)
+        self.hero_program['projection'].write(self.projection)
+        self.enemy_program['projection'].write(self.projection)
 
         self.ctx.clear(background.r, background.g, background.b)
 
@@ -434,7 +519,7 @@ class game(moderngl_window.WindowConfig):
         if len(self.to_remove_walls):
             self.to_remove_walls_vao.render(moderngl.LINES)
 
-        if self.hero_finder:
+        if self.hero_vao:
             self.hero_vao.render()
 
         if self.power_up_vao:
@@ -444,6 +529,9 @@ class game(moderngl_window.WindowConfig):
         if self.obstacle_vao:
             self.obstacle_program['projection'].write(self.projection)
             self.obstacle_vao.render()
+
+        if self.enemy_finder:
+            self.enemy_vao.render()
 
     def key_event(self, key, action, modifiers):
         keys = self.wnd.keys
@@ -483,7 +571,6 @@ class game(moderngl_window.WindowConfig):
         view_bottom = self.hero_finder.current_y() - (self.view_zoomfactor)
         view_up = self.hero_finder.current_y() + self.view_zoomfactor
 
-        self.hero_projection = glm.ortho(view_left, view_right, view_bottom, view_up)
         self.projection = glm.ortho(view_left, view_right, view_bottom, view_up)
 
     @classmethod
