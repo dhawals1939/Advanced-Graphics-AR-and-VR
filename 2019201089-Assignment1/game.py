@@ -82,22 +82,67 @@ class game(moderngl_window.WindowConfig):
     score_board_vert_vbo, score_board_color_vbo = None, None
     score_board_program, score_board_vao_content, score_board_vao = None, None, None
 
-    score_1 = [
-        -.1, .0,
-        0, .1,
-        .1, .0
-    ]
-    score_2 = [
-        -.4, .0,
-        -.3, .1,
-        -.2, .0
-    ]
-    score_3 = [
-        -.7, .0,
-        -.6, .1,
-        -.5, .0
-    ]
+    final_score_vao = None
+    final_score_program = None
+    final_score_texture = None
+
+    scores = [
+        [
+            -.1, .0,
+            0, .1,
+            .1, .0
+        ],
+        [
+            -.4, .0,
+            -.3, .1,
+            -.2, .0
+        ],
+        [
+            -.7, .0,
+            -.6, .1,
+            -.5, .0
+        ],
+        [
+            -1., .0,
+            -.9, .1,
+            -.8, .0
+        ],
+        [
+            -1.3, .0,
+            -1.2, .1,
+            -1.1, .0
+        ]]
     score = []
+
+    def render_result(self):
+        self.grid_vao, self.bomb_vao, self.enemy_vao, self.hero_vao, self.obstacle_vao = None, None, None, None, None
+        self.score_board_vao, self.power_up_vao, self.to_remove_walls_vao = None, None, None
+        self.final_score_vao = True
+
+        self.final_score_program = self.ctx.program(vertex_shader=open('./final_score.vert.glsl').read(),
+                                                    fragment_shader=open('./final_score.frag.glsl').read())
+        vertices = np.array([
+            # positions(0,1,2)     texture(3,4)     rgb(5,6,7)
+            0.5, 0.5, 0.0, 1.0, 1.0, 1., .0, .0,
+            0.5, -0.5, 0.0, 1.0, 0.0, .0, 1., .0,
+            -0.5, -0.5, 0.0, 0.0, 0.0, .0, .0, 1.,
+            -0.5, 0.5, 0.0, 0.0, 1.0, .5, .5, .0
+        ])
+        indices = np.array(
+            [
+                0, 1, 2,
+                2, 3, 0
+            ]
+        )
+        final_vbo = self.ctx.buffer(vertices.astype('float32').tobytes())
+        final_ebo = self.ctx.buffer(indices.astype('int32').tobytes())
+
+        final_vao_content = [
+            (final_vbo, '3f 2f 3f', 'in_vert', 'in_tex', 'in_color')
+        ]
+
+        self.final_score_texture = self.load_texture_2d('./imgs/%d.jpg' % self.power)
+        self.final_score_vao = self.ctx.vertex_array(self.final_score_program, final_vao_content, final_ebo)
 
     def score_board(self):
         score_board_model = glm.mat4(1.)
@@ -107,13 +152,21 @@ class game(moderngl_window.WindowConfig):
 
         if self.power == 0:
             self.score_board_vao = None
+            self.state += 1
+            self.render_result()
             return
-        if self.power == 1:
-            self.score = self.score_1
-        if self.power == 2:
-            self.score = self.score_1 + self.score_2
-        if self.power == 3:
-            self.score = self.score_1 + self.score_2 + self.score_3
+        else:
+            for i in range(self.power):
+                self.score += self.scores[i]
+        # if self.power == 1:
+        #     f
+        #     self.score =
+        # if self.power == 2:
+        #     self.score = self.score_1 + self.score_2
+        # if self.power == 3:
+        #     self.score = self.score_1 + self.score_2 + self.score_3
+        # if self.power == 4:
+        #     self.score = self.score_1 + self.score_2 + self.score_3 + self.score_4
 
         score_board_vert = np.array(self.score)
         score_board_color = np.array(np.concatenate([[.9, .0, .0] for i in range(int(len(score_board_vert) / 2))]).flat)
@@ -458,6 +511,7 @@ class game(moderngl_window.WindowConfig):
                     self.cell[cell_index(i, j)].road[direction.down] = True
                     self.cell[cell_index(i, j - 1)].road[direction.up] = True
             self.gen_maze()
+            self.power += 2
 
         if self.hero_finder is None:
             self.hero_finder = player(self.starting_x, self.starting_y, width, height, 'hero')
@@ -614,6 +668,9 @@ class game(moderngl_window.WindowConfig):
                 self.enemy_path_finder()
             self.review_point()
         elif self.state > 1:
+            import time
+            time.sleep(1)
+            self.render_result()
             # exit(0)
             pass
 
@@ -622,10 +679,10 @@ class game(moderngl_window.WindowConfig):
         self.maze_program['projection'].write(self.projection)
 
         self.ctx.clear(background.r, background.g, background.b)
+        if self.grid_vao and not self.final_score_vao:
+            self.grid_vao.render(moderngl.LINES)
 
-        self.grid_vao.render(moderngl.LINES)
-
-        if len(self.to_remove_walls):
+        if len(self.to_remove_walls) and self.to_remove_walls_vao and not self.final_score_vao:
             self.to_remove_walls_vao.render(moderngl.LINES)
 
         if self.bomb_vao:
@@ -651,6 +708,10 @@ class game(moderngl_window.WindowConfig):
         if self.score_board_vao:
             self.score_board_program['projection'].write(self.projection)
             self.score_board_vao.render()
+
+        if self.final_score_vao:
+            self.final_score_texture.use(0)
+            self.final_score_vao.render()
 
     def key_event(self, key, action, modifiers):
         keys = self.wnd.keys
