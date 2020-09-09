@@ -13,5 +13,8 @@ class ray:
     def direction(self) -> glm.vec3:
         return self.direc
 
+    def __str__(self):
+        return str(self.orig.to_list()) + " " + str(self.direc.to_list())
+
     def at(self, t) -> glm.vec3:
         return self.orig + t * self.direc
