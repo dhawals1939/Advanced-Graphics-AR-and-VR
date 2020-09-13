@@ -5,12 +5,23 @@ from ray import ray
 
 from sphere import sphere
 from hittable import *
+from util import *
 from hittable_list import hittable_list
+from camera import camera
 
 
-def write_color(file, color: glm.vec3):
+def write_color(file, color: glm.vec3, spp=1):
     if file:
-        file.write('%d %d %d\n' % tuple((255.999 * color).to_list()))
+        r, g, b = color.x, color.y, color.z
+
+        scale = 1 / spp
+        r *= scale
+        g *= scale
+        b *= scale
+
+        file.write('%d %d %d\n' % (256 * clamp(r, 0, .999),
+                                   256 * clamp(g, 0, .999),
+                                   256 * clamp(b, 0, .999)))
 
 
 def ray_color(r: ray, world: hittable) -> glm.vec3:
@@ -26,28 +37,30 @@ def ray_color(r: ray, world: hittable) -> glm.vec3:
     return (1. - t) * glm.vec3(1., 1., 1.) + t * glm.vec3(.5, .7, 1.)
 
 
+# Image
 aspect_ratio = 16 / 9
 width = 400
 height = int(width / aspect_ratio)
 
-viewport_height = 2.
-viewport_width = aspect_ratio * viewport_height
-focal_length = 1.
+samples_per_pixel = 10
 
-origin = glm.vec3(.0, .0, .0)
-horizontal = glm.vec3(viewport_width, 0., 0.)
-vertical = glm.vec3(0., viewport_height, .0)
-lower_left_corner = origin - horizontal / 2 - vertical / 2 - glm.vec3(0., 0., focal_length)
-
+# World
 world = hittable_list(sphere(glm.vec3(0, 0, -1), .5))
 world.add(sphere(glm.vec3(0, -100.5, -1), 100))
 
-with open('sphere.ppm', 'w') as f:
+# Camera
+cam = camera()
+
+with open('unaliased_sphere.ppm', 'w') as f:
     f.write('P3\n%d %d\n255\n' % (width, height))
     for j in tqdm(range(height - 1, -1, -1), desc='loading:'):
         for i in range(width):
-            u, v = i / (width - 1), j / (height - 1)
-            r = ray(origin, lower_left_corner + u * horizontal + v * vertical - origin)
-            color = ray_color(r, world)
+            color = glm.vec3(0, 0, 0)
 
-            write_color(f, color)
+            for sample in range(samples_per_pixel):
+
+                u, v = (i + random_double()) / (width - 1), (j + random_double()) / (height - 1)
+                r = cam.get_ray(u, v)
+                color += ray_color(r, world)
+
+            write_color(f, color, spp=samples_per_pixel)
