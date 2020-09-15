@@ -4,6 +4,7 @@ import glm
 
 class hit_record:
     p, normal, t, front_face = None, None, None, None
+    mat_ptr = None
 
     def set_face_normal(self, r: ray, outward_normal: glm.vec3):
         self.front_face = glm.dot(r.direction(), outward_normal) < 0
