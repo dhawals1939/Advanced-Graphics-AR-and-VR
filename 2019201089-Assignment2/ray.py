@@ -2,8 +2,6 @@ import glm
 
 
 class ray:
-    orig, direc = None, None
-
     def __init__(self, origin: glm.vec3, direction: glm.vec3):
         self.orig, self.direc = origin, direction
 

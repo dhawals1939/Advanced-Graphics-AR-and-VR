@@ -1,5 +1,6 @@
 import random
 import glm
+import inspect
 
 
 def random_double() -> float:
@@ -47,3 +48,7 @@ def random_in_hemisphere(normal: glm.vec3) -> glm.vec3:
         return in_unit_sphere
     else:
         return -in_unit_sphere
+
+
+def reflect(v: glm.vec3, n: glm.vec3):
+    return v - 2 * glm.dot(v, n) * n

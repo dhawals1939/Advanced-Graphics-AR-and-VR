@@ -1,13 +1,18 @@
-import glm
 from tqdm import tqdm
 import math
-from ray import ray
+import math
+import sys
+import time
 
-from sphere import sphere
-from hittable import *
-from util import *
-from hittable_list import hittable_list
+from tqdm import tqdm
+
 from camera import camera
+from hittable import hit_record, hittable
+from hittable_list import hittable_list
+from ray import ray
+from sphere import sphere
+from util import *
+from material import *
 
 
 def write_color(file, color: glm.vec3, spp=1):
@@ -31,8 +36,10 @@ def ray_color(r: ray, world: hittable, depth: int) -> glm.vec3:
         return glm.vec3(0, 0, 0)
 
     if world.hit(r, 0.001, math.inf, rec):
-        target = rec.p + rec.normal + random_unit_vector()
-        return .5 * ray_color(ray(rec.p, target - rec.p), world, depth -1)
+        attenuation, scattered = glm.vec3(0, 0, 0), ray(glm.vec3(0, 0, 0), glm.vec3(0, 0, 0)) # Dummy
+        if rec.mat_ptr.scatter(r, rec, attenuation, scattered):
+            return attenuation * ray_color(scattered, world, depth - 1)
+        return glm.vec3(0, 0, 0)
 
     unit_direction = glm.normalize(r.direction())
     t = .5 * (unit_direction.y + 1.)
@@ -50,14 +57,20 @@ samples_per_pixel = 30
 max_depth = 50
 
 # World
-world = hittable_list(sphere(glm.vec3(0, 0, -1), .5))
-world.add(sphere(glm.vec3(0, -100.5, -1), 100))
+
+material_ground = lambertian(glm.vec3(.8, .8, .0))
+material_center = lambertian(glm.vec3(.7, .3, .3))
+
+material_left = metal(glm.vec3(0.8, 0.8, 0.8))
+material_right = metal(glm.vec3(0.8, 0.6, 0.2))
+
+world = hittable_list(sphere(glm.vec3(0.0, -100.5, -1.0), 100.0, material_ground))
+world.add(sphere(glm.vec3(0.0, 0.0, -1.0), 0.5, material_center))
+world.add(sphere(glm.vec3(-1.0, 0.0, -1.0), 0.5, material_left))
+world.add(sphere(glm.vec3(1.0, 0.0, -1.0), 0.5, material_right))
 
 # Camera
 cam = camera()
-
-import sys
-import time
 
 output_file = sys.argv[1] if len(sys.argv) > 1 else str(time.time())+'.ppm'
 
