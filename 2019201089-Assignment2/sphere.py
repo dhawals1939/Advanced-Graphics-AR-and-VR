@@ -2,6 +2,7 @@ from hittable import hittable, hit_record
 import glm
 from ray import ray
 from material import material
+from aabb import aabb
 
 
 class sphere(hittable):
@@ -46,5 +47,11 @@ class sphere(hittable):
                 return True
 
         return False
+
+    def bounding_box(self, t0: float, t1: float, output_box: aabb):
+        output_box = aabb(
+            self.center - glm.vec3(self.radius, self.radius, self.radius),
+            self.center + glm.vec3(self.radius, self.radius, self.radius)
+        )
 
 

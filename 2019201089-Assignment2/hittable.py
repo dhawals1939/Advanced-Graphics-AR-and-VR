@@ -1,7 +1,7 @@
 from ray import ray
 import glm
 from material import material
-
+from aabb import aabb
 
 class hit_record:
 
@@ -16,4 +16,7 @@ class hit_record:
 
 class hittable:
     def hit(self, r: ray, t_min, t_max, rec: hit_record):
+        raise NotImplementedError
+
+    def bounding_box(self, t0: float, t1: float, output_box: aabb):
         raise NotImplementedError

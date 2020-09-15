@@ -1,5 +1,7 @@
 from hittable import hittable, hit_record
 from ray import ray
+import glm
+from aabb import aabb, sorrounding_box
 
 
 class hittable_list(hittable):
@@ -29,3 +31,21 @@ class hittable_list(hittable):
                 rec.mat_ptr.scatter = temp_record.mat_ptr.scatter
 
         return hit_anything
+
+    def bounding_box(self, t0: float, t1: float, output_box: aabb)-> bool:
+        if len(self.objects) == 0:
+            return False
+
+        temp_box = aabb(glm.vec3(0, 0, 0), glm.vec3(0, 0, 0))
+        first_box = True
+
+        for object in self.objects:
+            if not object.bounding_box(t0, t1, temp_box):
+                return False
+
+            _output_box = temp_box if first_box else sorrounding_box(output_box, temp_box)
+            output_box._min, output_box._max = _output_box.min(), _output_box.max()
+            first_box = False
+
+        return True
+
