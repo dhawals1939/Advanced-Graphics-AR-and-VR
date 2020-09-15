@@ -31,7 +31,7 @@ def ray_color(r: ray, world: hittable, depth: int) -> glm.vec3:
         return glm.vec3(0, 0, 0)
 
     if world.hit(r, 0.001, math.inf, rec):
-        target = rec.p + rec.normal + random_in_hemisphere(rec.normal)
+        target = rec.p + rec.normal + random_unit_vector()
         return .5 * ray_color(ray(rec.p, target - rec.p), world, depth -1)
 
     unit_direction = glm.normalize(r.direction())
@@ -45,9 +45,9 @@ aspect_ratio = 16 / 9
 width = 400
 height = int(width / aspect_ratio)
 
-samples_per_pixel = 20
+samples_per_pixel = 30
 
-max_depth = 400
+max_depth = 50
 
 # World
 world = hittable_list(sphere(glm.vec3(0, 0, -1), .5))
@@ -56,7 +56,13 @@ world.add(sphere(glm.vec3(0, -100.5, -1), 100))
 # Camera
 cam = camera()
 
-with open('lambertian_aliased_sphere.ppm', 'w') as f:
+import sys
+import time
+
+output_file = sys.argv[1] if len(sys.argv) > 1 else str(time.time())+'.ppm'
+
+
+with open(output_file, 'w') as f:
     f.write('P3\n%d %d\n255\n' % (width, height))
     for j in tqdm(range(height - 1, -1, -1), desc='loading:'):
         for i in range(width):

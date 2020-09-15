@@ -34,6 +34,13 @@ def random_in_unit_sphere() -> glm.vec3:
         return p
 
 
+def random_unit_vector() -> glm.vec3:
+    a = random_double_in_range(0, 2 * glm.pi())
+    z = random_double_in_range(-1, 1)
+    r = glm.sqrt(1 - z * z)
+    return glm.vec3(r * glm.cos(a), r * glm.sin(a), z)
+
+
 def random_in_hemisphere(normal: glm.vec3) -> glm.vec3:
     in_unit_sphere = random_in_unit_sphere()
     if glm.dot(in_unit_sphere, normal) > .0:
