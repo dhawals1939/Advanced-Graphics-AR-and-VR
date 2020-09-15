@@ -1,6 +1,5 @@
 import random
 import glm
-import inspect
 
 
 def random_double() -> float:
@@ -52,3 +51,10 @@ def random_in_hemisphere(normal: glm.vec3) -> glm.vec3:
 
 def reflect(v: glm.vec3, n: glm.vec3):
     return v - 2 * glm.dot(v, n) * n
+
+
+def refract(uv: glm.vec3, n: glm.vec3, etai_over_etat: float)->glm.vec3:
+    cos_theta = glm.dot(-uv, n)
+    r_out_perpendicular = etai_over_etat * (uv + cos_theta * n)
+    r_out_parallel = -glm.sqrt(glm.abs(1. - glm.length2(r_out_perpendicular))) * n
+    return r_out_perpendicular + r_out_parallel

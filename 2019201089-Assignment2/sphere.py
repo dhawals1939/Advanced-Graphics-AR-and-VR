@@ -1,4 +1,3 @@
-import math
 from hittable import hittable, hit_record
 import glm
 from ray import ray
@@ -20,7 +19,7 @@ class sphere(hittable):
         discriminant = half_b * half_b - a * c
 
         if discriminant > 0:
-            root = math.sqrt(discriminant)
+            root = glm.sqrt(discriminant)
 
             temp = (-half_b - root) / a
             if t_min < temp < t_max:
