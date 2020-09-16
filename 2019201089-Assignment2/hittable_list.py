@@ -25,14 +25,16 @@ class hittable_list(hittable):
                 hit_anything, closest_so_far = True, temp_record.t
                 rec.p, rec.t, = temp_record.p, temp_record.t
                 rec.normal, rec.front_face = temp_record.normal, temp_record.front_face
-                rec.mat_ptr.scatter = temp_record.mat_ptr.scatter
+                # rec.mat_ptr.scatter = temp_record.mat_ptr.scatter
+                rec.mat_ptr.emit = temp_record.mat_ptr.emit
 
                 rec.mat_ptr.albedo, rec.mat_ptr.fuzz, rec.mat_ptr.ref_ind = temp_record.mat_ptr.albedo, temp_record.mat_ptr.fuzz, temp_record.mat_ptr.ref_ind
                 rec.mat_ptr.scatter = temp_record.mat_ptr.scatter
+                rec.mat_ptr.emitted = temp_record.mat_ptr.emitted
 
         return hit_anything
 
-    def bounding_box(self, t0: float, t1: float, output_box: aabb)-> bool:
+    def bounding_box(self, t0: float, t1: float, output_box: aabb) -> bool:
         if len(self.objects) == 0:
             return False
 
@@ -44,8 +46,7 @@ class hittable_list(hittable):
                 return False
 
             _output_box = temp_box if first_box else sorrounding_box(output_box, temp_box)
-            output_box._min, output_box._max = _output_box.min(), _output_box.max()
+            output_box.mini, output_box.maxi = _output_box.min(), _output_box.max()
             first_box = False
 
         return True
-

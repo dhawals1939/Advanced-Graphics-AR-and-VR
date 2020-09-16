@@ -1,5 +1,6 @@
 from ray import ray
 from util import *
+from texture import *
 
 
 class material:
@@ -9,11 +10,19 @@ class material:
     def scatter(self, r_in: ray, rec, attenuation: glm.vec3, scattered: ray) -> bool:
         raise NotImplementedError
 
+    def emitted(self, u: float, v: float, p: glm.vec3)-> glm.vec3:
+        return glm.vec3(0, 0, 0)
+
 
 class lambertian(material):
-    def __init__(self, a: glm.vec3):
-        self.albedo = a
+    def __init__(self, a: glm.vec3 = None, tex=None):
+        if tex is not None:
+            self.albedo = tex
+        else:
+            self.albedo = solid_color(a)
+
         self.fuzz, self.ref_ind = None, None
+        self.emit = None
 
     def scatter(self, r_in: ray, rec, attenuation: glm.vec3, scattered: ray) -> bool:
         scatter_direction = rec.normal + random_unit_vector()
@@ -21,14 +30,21 @@ class lambertian(material):
         scattered.orig = _scattered.origin()
         scattered.direc = _scattered.direction()
 
-        attenuation.x, attenuation.y, attenuation.z = self.albedo.x, self.albedo.y, self.albedo.z
+        _albedo_corr = self.albedo.value(rec.u, rec.v, rec.p)
+        attenuation.x, attenuation.y, attenuation.z = _albedo_corr.x, _albedo_corr.y, _albedo_corr.z
+
         return True
 
 
 class metal(material):
-    def __init__(self, a: glm.vec3, fuzz: float):
-        self.albedo = a
+    def __init__(self, fuzz: float, color: glm.vec3 = None, tex=None):
+        if tex is not None:
+            self.albedo = tex
+        else:
+            self.albedo = solid_color(color)
+
         self.fuzz, self.ref_ind = fuzz if fuzz < 1 else 1, None
+        self.emit = None
 
     def scatter(self, r_in: ray, rec, attenuation: glm.vec3, scattered: ray) -> bool:
         reflected = reflect(glm.normalize(r_in.direction()), rec.normal)
@@ -38,7 +54,8 @@ class metal(material):
         scattered.orig = _scattered.origin()
         scattered.direc = _scattered.direction()
 
-        attenuation.x, attenuation.y, attenuation.z = self.albedo.x, self.albedo.y, self.albedo.z
+        _albedo_corr = self.albedo.value(rec.u, rec.v, rec.p)
+        attenuation.x, attenuation.y, attenuation.z = _albedo_corr.x, _albedo_corr.y, _albedo_corr.z
 
         return glm.dot(scattered.direction(), rec.normal) > 0
 
@@ -47,6 +64,7 @@ class dielectric(material):
     def __init__(self, ri: float):
         self.ref_ind = ri
         self.fuzz, self.albedo = None, None
+        self.emit = None
 
     def scatter(self, r_in: ray, rec, attenuation: glm.vec3, scattered: ray) -> bool:
         _att = glm.vec3(1., 1., 1.)
@@ -69,3 +87,19 @@ class dielectric(material):
         scattered.direc = _scattered.direction()
 
         return True
+
+
+class diffuse_light(material):
+    def __init__(self, tex: texture = None, color: glm.vec3 = None):
+        self.albedo, self.fuzz, self.ref_ind = None, None, None
+        self.emit = None
+        if tex is not None:
+            self.emit = tex
+        else:
+            self.emit = solid_color(color)
+
+    def scatter(self, r_in: ray, rec, attenuation: glm.vec3, scattered: ray) -> bool:
+        return False
+
+    def emitted(self, u: float, v: float, p: glm.vec3):
+        return self.emit.value(u, v, p)

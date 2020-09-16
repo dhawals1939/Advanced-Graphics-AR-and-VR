@@ -5,23 +5,23 @@ from ray import ray
 
 class aabb:
     def __init__(self, a: glm.vec3, b: glm.vec3):
-        self._min, self._max = a, b
+        self.mini, self.maxi = a, b
 
     def min(self):
-        return self._min
+        return self.mini
 
     def max(self):
-        return self._max
+        return self.maxi
 
     def hit(self, r: ray, tmin: float, tmax: float) -> bool:
         for a in range(3):
             invD = 1. / r.direction()[a]
 
-            t0 = glm.fmin((self._min[a] - r.origin()[a]) * invD,
-                          (self._max[a] - r.origin()[a]) * invD)
+            t0 = glm.fmin((self.mini[a] - r.origin()[a]) * invD,
+                          (self.maxi[a] - r.origin()[a]) * invD)
 
-            t1 = glm.fmax((self._min[a] - r.origin()[a]) * invD,
-                          (self._max[a] - r.origin()[a]) * invD)
+            t1 = glm.fmax((self.mini[a] - r.origin()[a]) * invD,
+                          (self.maxi[a] - r.origin()[a]) * invD)
 
             tmin, tmax = glm.fmax(t0, tmin), glm.fmin(t1, tmax)
 

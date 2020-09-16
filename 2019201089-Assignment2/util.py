@@ -53,8 +53,19 @@ def reflect(v: glm.vec3, n: glm.vec3):
     return v - 2 * glm.dot(v, n) * n
 
 
-def refract(uv: glm.vec3, n: glm.vec3, etai_over_etat: float)->glm.vec3:
+def refract(uv: glm.vec3, n: glm.vec3, etai_over_etat: float) -> glm.vec3:
     cos_theta = glm.dot(-uv, n)
     r_out_perpendicular = etai_over_etat * (uv + cos_theta * n)
     r_out_parallel = -glm.sqrt(glm.abs(1. - glm.length2(r_out_perpendicular))) * n
     return r_out_perpendicular + r_out_parallel
+
+
+def get_sphere_uv(p: glm.vec3) -> [int, int]:
+    import math
+    try:
+        phi = math.atan2(p.z, p.x)
+        theta = math.asin(p.y)
+    except ValueError:
+        phi, theta = 0, 0
+
+    return 1 - (phi + math.pi) / (2 * math.pi), (theta + math.pi / 2) / math.pi

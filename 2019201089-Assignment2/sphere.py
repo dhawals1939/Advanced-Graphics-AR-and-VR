@@ -1,5 +1,6 @@
 from hittable import hittable, hit_record
 import glm
+from util import *
 from ray import ray
 from material import material
 from aabb import aabb
@@ -31,6 +32,10 @@ class sphere(hittable):
 
                 rec.mat_ptr.albedo, rec.mat_ptr.fuzz, rec.mat_ptr.ref_ind = self.mat_ptr.albedo, self.mat_ptr.fuzz, self.mat_ptr.ref_ind
                 rec.mat_ptr.scatter = self.mat_ptr.scatter
+                rec.mat_ptr.emitted = self.mat_ptr.emitted
+                rec.mat_ptr.emit = self.mat_ptr.emit
+
+                rec.u, rec.v = get_sphere_uv((rec.p - self.center) / self.radius)
 
                 return True
 
@@ -43,15 +48,19 @@ class sphere(hittable):
 
                 rec.mat_ptr.albedo, rec.mat_ptr.fuzz, rec.mat_ptr.ref_ind = self.mat_ptr.albedo, self.mat_ptr.fuzz, self.mat_ptr.ref_ind
                 rec.mat_ptr.scatter = self.mat_ptr.scatter
+                rec.mat_ptr.emitted = self.mat_ptr.emitted
+                rec.mat_ptr.emit = self.mat_ptr.emit
+
+                rec.u, rec.v = get_sphere_uv((rec.p - self.center) / self.radius)
 
                 return True
 
         return False
 
-    def bounding_box(self, t0: float, t1: float, output_box: aabb):
-        output_box = aabb(
-            self.center - glm.vec3(self.radius, self.radius, self.radius),
-            self.center + glm.vec3(self.radius, self.radius, self.radius)
-        )
+    def bounding_box(self, t0: float, t1: float, output_box: aabb) -> bool:
+        _min = self.center - glm.vec3(self.radius, self.radius, self.radius)
+        _max = self.center + glm.vec3(self.radius, self.radius, self.radius)
 
-
+        output_box.mini.x, output_box.mini.y, output_box.mini.z = _min.x, _min.y, _min.z
+        output_box.maxi.x, output_box.maxi.y, output_box.maxi.z = _max.x, _max.y, _max.z
+        return True
