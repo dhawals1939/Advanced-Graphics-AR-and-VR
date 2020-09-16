@@ -44,9 +44,8 @@ class triangle(hittable):
         if not (0 < beta < (1 - gamma)):
             return False
 
-
-        rec.u = 1
-        rec.v = 1
+        rec.u = .4
+        rec.v = .4
         rec.t = t
 
         outward_normal = glm.cross(diff_a_c, diff_a_b)
@@ -62,16 +61,14 @@ class triangle(hittable):
         return True
 
     def bounding_box(self, t0: float, t1: float, output_box: aabb) -> bool:
-        min_x, min_y, min_z = min(self.a.x, self.b.x, self.c.x), min(self.a.y, self.b.y, self.c.y), min(self.a.z,
-                                                                                                        self.b.z,
-                                                                                                        self.c.z)
+        min_x, min_y, min_z = min(self.a.x, self.b.x, self.c.x), min(self.a.y, self.b.y, self.c.y), \
+                              min(self.a.z, self.b.z, self.c.z)
 
-        max_x, max_y, max_z = max(self.a.x, self.b.x, self.c.x), max(self.a.y, self.b.y, self.c.y), max(self.a.z,
-                                                                                                        self.b.z,
-                                                                                                        self.c.z)
+        max_x, max_y, max_z = max(self.a.x, self.b.x, self.c.x), max(self.a.y, self.b.y, self.c.y), \
+                              max(self.a.z, self.b.z, self.c.z)
 
-        _output_box = aabb(glm.vec3(min_x - .01, min_y - .01, min_z - .01),
-                           glm.vec3(max_x + .01, max_y + .01, max_z + .01))
+        _output_box = aabb(glm.vec3(min_x - .001, min_y - .001, min_z - .001),
+                           glm.vec3(max_x + .001, max_y + .001, max_z + .001))
 
         output_box.mini, output_box.maxi = _output_box.mini, output_box.maxi
         return True

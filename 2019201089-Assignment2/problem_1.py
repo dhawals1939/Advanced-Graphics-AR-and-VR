@@ -59,32 +59,14 @@ samples_per_pixel = None
 
 # World
 background = glm.vec3(1, 1, 1)  # background color
-#
-#
-#
-# diffuseLight = diffuse_light(color=glm.vec3(1, 1, 1))
-#
-# world = hittable_list(xz_rect(-5, 5, -10, 0, -.9, material_ground))
-# world.add(sphere(glm.vec3(0.0, 0.0, -2.0), 0.5, material_center))
-# world.add(sphere(glm.vec3(-2.0, 0.0, -2.0), 0.5, material_left))
-# world.add(sphere(glm.vec3(1.0, 0.0, -1.0), 0.5, material_right))
-#
-# # Light
-# world.add(yz_rect(-2, 2, -2, -1, .5, diffuseLight))
-
 
 diffuse_material = lambertian(glm.vec3(.5, .2, .1))
 
 world = cornell_box()
-# world.add(sphere(glm.vec3(-1.0, -.5, -1.5), .5, diffuse_material))
-# world.add(box(glm.vec3(.5, -.9, -2.5), glm.vec3(1, -.4, -2), diffuse_material))
-world.add(triangle(glm.vec3(-.9, -.3, -1), glm.vec3(.9, -.3, -1), glm.vec3(.0, .7, -1), diffuse_material))
-
-# prev_y = -.9
-# for i in range(11):
-#     inc = i * .02
-#     world.add(box(glm.vec3(-.2 + i, prev_y, -2.4 + i), glm.vec3(.2 - i, prev_y + .08, -2 - i), diffuse_material))
-#     prev_y += .08
+world.add(sphere(glm.vec3(-1.0, -.5, -1.5), .5, diffuse_material))
+world.add(box(glm.vec3(.5, -.9, -2.5), glm.vec3(1, -.4, -2), diffuse_material))
+metallic_material = metal(.01, glm.vec3(0.5, 0.5, 0.2))
+world.add(sphere(glm.vec3(.0, -.5, -1.5), .5, metallic_material))
 
 # Camera
 cam = camera()
