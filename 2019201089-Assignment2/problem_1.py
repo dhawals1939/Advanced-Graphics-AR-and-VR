@@ -8,6 +8,7 @@ from camera import camera
 from hittable import hit_record, hittable
 from hittable_list import hittable_list
 from sphere import sphere
+from triangle import triangle
 from box import box
 
 from cornell_box import cornell_box
@@ -75,10 +76,15 @@ background = glm.vec3(1, 1, 1)  # background color
 diffuse_material = lambertian(glm.vec3(.5, .2, .1))
 
 world = cornell_box()
-world.add(sphere(glm.vec3(-1.0, -.5, -1.5), .5, diffuse_material))
-world.add(box(glm.vec3(.5, -.9, -2.5), glm.vec3(1, -.4, -2), diffuse_material))
+# world.add(sphere(glm.vec3(-1.0, -.5, -1.5), .5, diffuse_material))
+# world.add(box(glm.vec3(.5, -.9, -2.5), glm.vec3(1, -.4, -2), diffuse_material))
+world.add(triangle(glm.vec3(-.9, -.3, -1), glm.vec3(.9, -.3, -1), glm.vec3(.0, .7, -1), diffuse_material))
 
-#test
+# prev_y = -.9
+# for i in range(11):
+#     inc = i * .02
+#     world.add(box(glm.vec3(-.2 + i, prev_y, -2.4 + i), glm.vec3(.2 - i, prev_y + .08, -2 - i), diffuse_material))
+#     prev_y += .08
 
 # Camera
 cam = camera()

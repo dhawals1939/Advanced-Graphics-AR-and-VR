@@ -79,7 +79,10 @@ glass_material = dielectric(1.5)
 
 world = cornell_box()
 world.add(sphere(glm.vec3(-1.0, -.5, -1.5), .5, glass_material))
-world.add(box(glm.vec3(.5, -.9, -2.5), glm.vec3(1, -.4, -2), diffuse_material))
+
+glass_material = dielectric(1.3)
+world.add(sphere(glm.vec3(.0, -.5, -1.5), .5, glass_material))
+world.add(box(glm.vec3(-1.0, -.5, -2.5), glm.vec3(.0, .4, -2), diffuse_material))
 
 #test
 

@@ -16,7 +16,8 @@ def cornell_box() -> hittable_list:
 
     light = diffuse_light(color=glm.vec3(15, 15, 15))
 
-    world = hittable_list(yz_rect(-1, 1, -5, 0, -2, green))  # left wall
+    # world = hittable_list(yz_rect(-1, 1, -5, 0, -2, green))  # left wall
+    world = hittable_list(yz_rect(-1, 1, -5, 0, 2, red))  # left wall
 
     world.add(yz_rect(-1, 1, -5, 0, 2, red))  # right wall
 

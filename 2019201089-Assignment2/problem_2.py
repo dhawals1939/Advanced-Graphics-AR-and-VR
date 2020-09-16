@@ -77,7 +77,10 @@ metallic_material = metal(.01, glm.vec3(0.8, 0.8, 0.8))
 
 world = cornell_box()
 world.add(sphere(glm.vec3(-1.0, -.5, -1.5), .5, metallic_material))
+metallic_material = metal(.01, glm.vec3(0.5, 0.5, 0.2))
+world.add(sphere(glm.vec3(.0, -.5, -1.5), .5, metallic_material))
 world.add(box(glm.vec3(.5, -.9, -2.5), glm.vec3(1, -.4, -2), diffuse_material))
+
 
 #test
 
