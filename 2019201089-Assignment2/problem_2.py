@@ -8,6 +8,7 @@ from camera import camera
 from hittable import hit_record, hittable
 from hittable_list import hittable_list
 from sphere import sphere
+from box import box
 
 from cornell_box import cornell_box
 from material import *
@@ -56,7 +57,7 @@ height = int(width / aspect_ratio)
 samples_per_pixel = None
 
 # World
-background = glm.vec3(.1, .1, .1)  # background color
+background = glm.vec3(1, 1, 1)  # background color
 #
 #
 #
@@ -72,15 +73,19 @@ background = glm.vec3(.1, .1, .1)  # background color
 
 
 diffuse_material = lambertian(glm.vec3(.5, .2, .1))
+metallic_material = metal(.01, glm.vec3(0.8, 0.8, 0.8))
 
 world = cornell_box()
-world.add(sphere(glm.vec3(-1.0, 0.0, -2.0), 0.5, diffuse_material))
+world.add(sphere(glm.vec3(-1.0, -.5, -1.5), .5, metallic_material))
+world.add(box(glm.vec3(.5, -.9, -2.5), glm.vec3(1, -.4, -2), diffuse_material))
+
+#test
 
 # Camera
 cam = camera()
 
-output_file = sys.argv[1] if len(sys.argv) > 1 else str(time.time()) + '.ppm'
-samples_per_pixel = int(sys.argv[2].strip()) if len(sys.argv) > 2 else 10
+output_file = sys.argv[1] if len(sys.argv) > 1 else 'problem2' + '.ppm'
+samples_per_pixel = int(sys.argv[2].strip()) if len(sys.argv) > 2 else 1
 max_depth = int(sys.argv[3].strip()) if len(sys.argv) > 3 else 100
 
 with open(output_file, 'w') as f:

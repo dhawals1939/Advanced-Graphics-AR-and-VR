@@ -1,7 +1,7 @@
 from hittable import hittable, hit_record
 from ray import ray
 import glm
-from aabb import aabb, sorrounding_box
+from aabb import aabb, surrounding_box
 
 
 class hittable_list(hittable):
@@ -45,7 +45,7 @@ class hittable_list(hittable):
             if not object.bounding_box(t0, t1, temp_box):
                 return False
 
-            _output_box = temp_box if first_box else sorrounding_box(output_box, temp_box)
+            _output_box = temp_box if first_box else surrounding_box(output_box, temp_box)
             output_box.mini, output_box.maxi = _output_box.min(), _output_box.max()
             first_box = False
 

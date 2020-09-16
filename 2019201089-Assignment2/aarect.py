@@ -11,7 +11,7 @@ class xy_rect(hittable):
         self.mp = mat
 
     def hit(self, r: ray, t_min, t_max, rec: hit_record) -> bool:
-        t = (self.k - r.origin().z) / r.direction().z
+        t = (self.k - r.origin().z) / r.direction().z if r.direction().z != 0 else 0
 
         if not t_min <= t <= t_max:
             return False
@@ -50,7 +50,7 @@ class xz_rect(hittable):
         self.mp = mat
 
     def hit(self, r: ray, t_min, t_max, rec: hit_record) -> bool:
-        t = (self.k - r.origin().y) / r.direction().y
+        t = (self.k - r.origin().y) / r.direction().y if r.direction().y != 0 else 0
 
         if not t_min <= t <= t_max:
             return False
@@ -89,7 +89,8 @@ class yz_rect(hittable):
         self.mp = mat
 
     def hit(self, r: ray, t_min, t_max, rec: hit_record) -> bool:
-        t = (self.k - r.origin().x) / r.direction().x
+
+        t = (self.k - r.origin().x) / r.direction().x if r.direction().x != 0 else 0
 
         if not t_min <= t <= t_max:
             return False

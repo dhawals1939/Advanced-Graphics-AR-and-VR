@@ -38,6 +38,7 @@ class lambertian(material):
 
 class metal(material):
     def __init__(self, fuzz: float, color: glm.vec3 = None, tex=None):
+        self.albedo = None
         if tex is not None:
             self.albedo = tex
         else:

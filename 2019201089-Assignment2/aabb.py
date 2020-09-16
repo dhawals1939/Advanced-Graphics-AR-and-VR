@@ -31,7 +31,7 @@ class aabb:
         return True
 
 
-def sorrounding_box(box0: aabb, box1: aabb) -> aabb:
+def surrounding_box(box0: aabb, box1: aabb) -> aabb:
     small = glm.vec3(
         glm.fmin(box0.min().x(), box1.min().x()),
         glm.fmin(box0.min().y(), box1.min().y()),

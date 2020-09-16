@@ -66,7 +66,7 @@ class bvh_node(hittable):
         if (not self.left.bounding_box(time0, time1, box_left)) or (not self.right.bounding_box(time0, time1, box_right)):
             print('No boundig box vbh')
 
-        self.box = sorrounding_box(box_left, box_right)
+        self.box = surrounding_box(box_left, box_right)
 
 
     def hit(self, r: ray, t_min, t_max, rec: hit_record) -> bool:
