@@ -46,12 +46,12 @@ Filters.scale = function(mesh, s) {
   const verts = mesh.getModifiableVertices();
 
   // ----------- STUDENT CODE BEGIN ------------
-  // matrix = new Matrix3();
-  // matrix.multiplySclar(s);
+  matrix = new THREE.Matrix3()
+  matrix.multiplyScalar(s);
 
   for(let vert of verts)
   {
-    vert.position.multiplySclar(s);
+    vert.position.applyMatrix3(matrix);
   }
   // ----------- STUDENT CODE END ------------
   Gui.alertOnce("Scaling is not implemented yet");
