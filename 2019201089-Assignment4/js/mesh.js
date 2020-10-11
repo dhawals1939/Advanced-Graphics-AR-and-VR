@@ -166,7 +166,30 @@ Mesh.prototype.edgeBetweenVertices = function(v1, v2) {
 Mesh.prototype.calculateFaceArea = function(f) {
   let area = 0.0;
   // ----------- STUDENT CODE BEGIN ------------
-  // ----------- Our reference solution uses 21 lines of code.
+  let edge_list = this.edgesOnFace(f);
+
+  let vertex_list = []
+  let centroid = new THREE.Vector3();
+  for(let edge of edge_list)
+  {
+    vertex_list.push(edge.vertex.position);
+    centroid.add(edge.vertex.position);
+  }
+
+  centroid.divideScalar(vertex_list.length);
+
+  for(let i =0; i < vertex_list.length; i++)
+  {
+    let a = vertex_list[i % vertex_list.length].distanceTo(centroid);
+    let b = vertex_list[(i + 1) % vertex_list.length].distanceTo(centroid);
+    let c = vertex_list[(i + 1) % vertex_list.length].distanceTo(vertex_list[i % vertex_list.length])
+
+    let s = (a + b + c) /2 ;
+    area += (s*(s-a) * (s-b)*(s-c)) ** 0.5;
+  }
+    
+
+  // console.log(vertex_list, area);
   // ----------- STUDENT CODE END ------------
   f.area = area;
   return area;
@@ -184,7 +207,19 @@ Mesh.prototype.calculateFacesArea = function() {
 Mesh.prototype.calculateVertexNormal = function(v) {
   const v_normal = new THREE.Vector3(0, 0, 0);
   // ----------- STUDENT CODE BEGIN ------------
-  // ----------- Our reference solution uses 11 lines of code.
+  let associated_faces = this.facesOnVertex(v);
+
+  let total_area = 0.0
+  for(face of associated_faces)
+  {
+    let current_normal = face.normal.clone();
+    current_normal.multiplyScalar(face.area);
+    
+    v_normal.add(current_normal);
+    total_area += face.area;
+  }
+  v_normal.divideScalar(total_area);
+  // console.log(v_normal);
   // ----------- STUDENT CODE END ------------
   v.normal = v_normal;
   return v_normal;
@@ -202,7 +237,15 @@ Mesh.prototype.averageEdgeLength = function(v) {
   let avg = 0.0;
 
   // ----------- STUDENT CODE BEGIN ------------
-  // ----------- Our reference solution uses 9 lines of code.
+  let vertex_list = this.verticesOnVertex(v);
+  
+  for(vertex of vertex_list)
+  {
+    avg += vertex.position.distanceTo(v.position);
+  }
+  avg /= vertex_list.length;
+
+  console.log(avg);
   // ----------- STUDENT CODE END ------------
 
   return avg;
