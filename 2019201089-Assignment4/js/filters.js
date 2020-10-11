@@ -77,9 +77,17 @@ Filters.noise = function(mesh, factor) {
   const verts = mesh.getModifiableVertices();
 
   // ----------- STUDENT CODE BEGIN ------------
-  // ----------- Our reference solution uses 13 lines of code.
+  for(vertex of verts)
+  {
+    let normal = vertex.normal.clone();
+    normal.normalize();
+    
+    vertex.position.addScaledVector(normal,  Math.random() * (2) -1);
+
+    vertex.position.multiplyScalar(factor * mesh.averageEdgeLength(vertex));
+  }
   // ----------- STUDENT CODE END ------------
-  Gui.alertOnce("Noise is not implemented yet");
+  //   Gui.alertOnce("Noise is not implemented yet");
 
   mesh.calculateFacesArea();
   mesh.updateNormals();
