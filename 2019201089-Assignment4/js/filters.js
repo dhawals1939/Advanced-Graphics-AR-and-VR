@@ -29,8 +29,6 @@ Filters.rotation = function(mesh, x, y, z) {
   // ----------- Our reference solution uses 5 lines of code.
   rotation_matrix = new THREE.Euler(x, y, z, 'XYZ')
 
-  mesh.verticesOnVertex(mesh.faces[0].halfedge.vertex)
-
   for(let vert of verts)
   {
     vert.position.applyEuler(rotation_matrix)

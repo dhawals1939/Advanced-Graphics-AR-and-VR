@@ -71,8 +71,7 @@ Mesh.prototype.verticesOnVertex = function(v) {
   {
     vertices.push(he.vertex);
   }
-  console.log(v, halfedges, vertices);
-  // ----------- STUDENT CODE END ------------
+  // ----------- STUDENT CODE END --------------
 
   return vertices;
 };
@@ -103,7 +102,17 @@ Mesh.prototype.facesOnVertex = function(v) {
   const faces = [];
 
   // ----------- STUDENT CODE BEGIN ------------
-  // ----------- Our reference solution uses 9 lines of code.
+  halfedges = this.edgesOnVertex(v);
+  for(let halfedge of halfedges)
+  {
+    if(!faces.includes(halfedge.face))
+      faces.push(halfedge.face)
+
+    if(!faces.includes(halfedge.opposite.face))
+      faces.push(halfedge.opposite.face)
+  }
+
+  // console.log(v.id, faces);
   // ----------- STUDENT CODE END ------------
 
   return faces;
@@ -114,7 +123,8 @@ Mesh.prototype.verticesOnEdge = function(e) {
   const vertices = [];
 
   // ----------- STUDENT CODE BEGIN ------------
-  // ----------- Our reference solution uses 2 lines of code.
+  vertices.push(e.vertex);
+  vertices.push(e.opposite.vertex);
   // ----------- STUDENT CODE END ------------
 
   return vertices;
@@ -124,7 +134,8 @@ Mesh.prototype.verticesOnEdge = function(e) {
 Mesh.prototype.facesOnEdge = function(e) {
   const faces = [];
   // ----------- STUDENT CODE BEGIN ------------
-  // ----------- Our reference solution uses 2 lines of code.
+  faces.push(e.face);
+  faces.push(e.opposite.face);
   // ----------- STUDENT CODE END ------------
   return faces;
 };
@@ -133,7 +144,16 @@ Mesh.prototype.facesOnEdge = function(e) {
 Mesh.prototype.edgeBetweenVertices = function(v1, v2) {
   let out_he = undefined;
   // ----------- STUDENT CODE BEGIN ------------
-  // ----------- Our reference solution uses 11 lines of code.
+  halfedges = this.edgesOnVertex(v1);
+  for(let halfedge of halfedges)
+  {
+    if (halfedge.vertex == v2)
+    {
+      out_he = halfedge;
+      break;
+    }
+  }
+  // console.log(v1.id, v2.id, out_he);
   // ----------- STUDENT CODE END ------------
   return out_he;
 };
