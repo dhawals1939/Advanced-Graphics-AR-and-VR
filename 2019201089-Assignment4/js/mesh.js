@@ -245,7 +245,7 @@ Mesh.prototype.averageEdgeLength = function(v) {
   }
   avg /= vertex_list.length;
 
-  console.log(avg);
+//   console.log(avg);
   // ----------- STUDENT CODE END ------------
 
   return avg;

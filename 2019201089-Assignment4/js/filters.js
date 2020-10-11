@@ -113,11 +113,51 @@ Filters.noise = function(mesh, factor) {
 //
 Filters.smooth = function(mesh, iter, delta, curvFlow, scaleDep, implicit) {
   const verts = mesh.getModifiableVertices();
+//   console.log(verts);
 
   // ----------- STUDENT CODE BEGIN ------------
-  // ----------- Our reference solution uses 16 lines of code.
+  if(!curvFlow)
+  {
+      let new_verts = [];
+      while(iter--)
+      {
+          for(let vertex of verts)
+          {
+              new_verts.push(vertex.position.clone());
+          }
+
+          for(let i in new_verts)
+          {
+              let neighbors = mesh.verticesOnVertex(verts[i]);
+
+              let _sum_of_neighbors = new THREE.Vector3();
+              for(let neighbor of neighbors)
+              {
+                  _sum_of_neighbors.add(neighbor.position);
+              }
+
+              _sum_of_neighbors.addScaledVector(verts[i].position.clone().negate(), neighbors.length);
+
+              new_verts[i].addScaledVector(_sum_of_neighbors, delta);
+          }
+
+          for(let i=0; i < new_verts.length; i++)
+          {
+              verts[i].position.set(new_verts[i].x,
+                                    new_verts[i].y,
+                                    new_verts[i].z);
+          }
+
+          new_verts = []
+      }
+  }
+  else if(curvFlow)
+  {
+      
+  }
+//   console.log(verts);
   // ----------- STUDENT CODE END ------------
-  Gui.alertOnce("Smooth is not implemented yet");
+  //   Gui.alertOnce("Smooth is not implemented yet");
   mesh.calculateFacesArea();
   mesh.updateNormals();
 };
@@ -128,9 +168,9 @@ Filters.sharpen = function(mesh, iter, delta) {
   const verts = mesh.getModifiableVertices();
 
   // ----------- STUDENT CODE BEGIN ------------
-  // ----------- Our reference solution uses 9 lines of code.
+  this.smooth(mesh, iter, -delta, false, false, false);
   // ----------- STUDENT CODE END ------------
-  Gui.alertOnce("Sharpen is not implemented yet");
+  //   Gui.alertOnce("Sharpen is not implemented yet");
   mesh.calculateFacesArea();
   mesh.updateNormals();
 };
@@ -196,9 +236,15 @@ Filters.triangulate = function(mesh) {
   const faces = mesh.getModifiableFaces();
 
   // ----------- STUDENT CODE BEGIN ------------
-  // ----------- Our reference solution uses 4 lines of code.
+  for(let face of faces)
+  {   
+      let verts = mesh.verticesOnFace(face);
+      for(let i in verts)
+        if(i > 1 && i < verts.length - 1)
+            mesh.splitFaceMakeEdge(face, verts[0], verts[i]);
+  }
   // ----------- STUDENT CODE END ------------
-  Gui.alertOnce("triangulate is not implemented yet");
+//   Gui.alertOnce("triangulate is not implemented yet");
 
   mesh.calculateFacesArea();
   mesh.updateNormals();
