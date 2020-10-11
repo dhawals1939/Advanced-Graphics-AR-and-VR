@@ -152,7 +152,12 @@ Filters.twist = function(mesh, factor) {
   const verts = mesh.getModifiableVertices();
 
   // ----------- STUDENT CODE BEGIN ------------
-  // ----------- Our reference solution uses 8 lines of code.
+
+  for(let vert of verts)
+  {
+    rotation_matrix = new THREE.Euler(0, vert.position.y * factor, 0, 'XYZ');
+    vert.position.applyEuler(rotation_matrix);
+  }
   // ----------- STUDENT CODE END ------------
   Gui.alertOnce("Twist is not implemented yet");
 
