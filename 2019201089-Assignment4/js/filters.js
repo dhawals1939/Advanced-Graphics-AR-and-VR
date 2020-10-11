@@ -26,13 +26,9 @@ Filters.rotation = function(mesh, x, y, z) {
   const verts = mesh.getModifiableVertices();
 
   // ----------- STUDENT CODE BEGIN ------------
-  // ----------- Our reference solution uses 5 lines of code.
   rotation_matrix = new THREE.Euler(x, y, z, 'XYZ')
-
   for(let vert of verts)
-  {
     vert.position.applyEuler(rotation_matrix)
-  }
   // ----------- STUDENT CODE END ------------
   // Gui.alertOnce("Rotation is not implemented yet");
 
@@ -82,9 +78,8 @@ Filters.noise = function(mesh, factor) {
     let normal = vertex.normal.clone();
     normal.normalize();
     
-    vertex.position.addScaledVector(normal,  Math.random() * (2) -1);
-
-    vertex.position.multiplyScalar(factor * mesh.averageEdgeLength(vertex));
+    vertex.position.addScaledVector(normal,  
+          factor * mesh.averageEdgeLength(vertex) * (1.9999999999 * Math.random() - 1));
   }
   // ----------- STUDENT CODE END ------------
   //   Gui.alertOnce("Noise is not implemented yet");
