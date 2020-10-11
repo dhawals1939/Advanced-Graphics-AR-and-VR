@@ -29,6 +29,8 @@ Filters.rotation = function(mesh, x, y, z) {
   // ----------- Our reference solution uses 5 lines of code.
   rotation_matrix = new THREE.Euler(x, y, z, 'XYZ')
 
+  mesh.verticesOnVertex(mesh.faces[0].halfedge.vertex)
+
   for(let vert of verts)
   {
     vert.position.applyEuler(rotation_matrix)
@@ -54,7 +56,7 @@ Filters.scale = function(mesh, s) {
     vert.position.applyMatrix3(matrix);
   }
   // ----------- STUDENT CODE END ------------
-  Gui.alertOnce("Scaling is not implemented yet");
+  // Gui.alertOnce("Scaling is not implemented yet");
 
   mesh.calculateFacesArea();
   mesh.updateNormals();

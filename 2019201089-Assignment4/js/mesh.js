@@ -26,7 +26,16 @@ Mesh.prototype.edgesOnFace = function(f) {
   const halfedges = [];
 
   // ----------- STUDENT CODE BEGIN ------------
-  // ----------- Our reference solution uses 9 lines of code.
+  let first = f.halfedge
+  let he = first;
+  while(true)
+  {
+    halfedges.push(he);
+    he = he.next;
+
+    if(first == he)
+      break;
+  }
   // ----------- STUDENT CODE END ------------
 
   return halfedges;
@@ -36,9 +45,16 @@ Mesh.prototype.edgesOnFace = function(f) {
 // including input face.
 Mesh.prototype.facesOnFace = function(f) {
   const faces = [];
-
   // ----------- STUDENT CODE BEGIN ------------
-  // ----------- Our reference solution uses 9 lines of code.
+  halfedges = this.edgesOnFace(f)
+  for(let he of halfedges)
+  {
+    if (he.opposite.face == f)
+      continue
+    // console.log(he.opposite)
+    faces.push(he.opposite.face)
+  }
+  // console.log(faces)
   // ----------- STUDENT CODE END ------------
 
   return faces;
@@ -50,7 +66,12 @@ Mesh.prototype.verticesOnVertex = function(v) {
   const vertices = [];
 
   // ----------- STUDENT CODE BEGIN ------------
-  // ----------- Our reference solution uses 9 lines of code.
+  halfedges = this.edgesOnVertex(v);
+  for(let he of halfedges)
+  {
+    vertices.push(he.vertex);
+  }
+  console.log(v, halfedges, vertices);
   // ----------- STUDENT CODE END ------------
 
   return vertices;
@@ -61,7 +82,17 @@ Mesh.prototype.edgesOnVertex = function(v) {
   const halfedges = [];
 
   // ----------- STUDENT CODE BEGIN ------------
-  // ----------- Our reference solution uses 9 lines of code.
+  let first = he = v.halfedge;
+  while(true)
+  {
+    if(halfedges.includes(he))
+      break
+    halfedges.push(he);
+    he = he.opposite.next;
+
+    if(first == he)
+      break;
+  }
   // ----------- STUDENT CODE END ------------
 
   return halfedges;
