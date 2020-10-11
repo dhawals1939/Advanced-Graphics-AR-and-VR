@@ -138,9 +138,15 @@ Filters.inflate = function(mesh, factor) {
   const verts = mesh.getModifiableVertices();
 
   // ----------- STUDENT CODE BEGIN ------------
-  // ----------- Our reference solution uses 16 lines of code.
+  for(let vertex of verts)
+  {
+      let normal = vertex.normal.clone();
+      normal.normalize();
+      
+      vertex.position.addScaledVector(normal, factor);
+  }
   // ----------- STUDENT CODE END ------------
-  Gui.alertOnce("Inflate is not implemented yet");
+//   Gui.alertOnce("Inflate is not implemented yet");
 
   mesh.calculateFacesArea();
   mesh.updateNormals();
@@ -159,7 +165,7 @@ Filters.twist = function(mesh, factor) {
     vert.position.applyEuler(rotation_matrix);
   }
   // ----------- STUDENT CODE END ------------
-  Gui.alertOnce("Twist is not implemented yet");
+//   Gui.alertOnce("Twist is not implemented yet");
 
   mesh.calculateFacesArea();
   mesh.updateNormals();
@@ -167,10 +173,16 @@ Filters.twist = function(mesh, factor) {
 
 // warp a mesh using a nonlinear mapping of your choice
 Filters.wacky = function(mesh, factor) {
+    const verts = mesh.getModifiableVertices();
   // ----------- STUDENT CODE BEGIN ------------
-  // ----------- Our reference solution uses 3 lines of code.
+  for(let vertex of verts)
+  {
+      let normal = vertex.normal.clone();
+      normal.normalize();
+      vertex.position.addScaledVector(normal, factor * Math.floor((Math.random() * 10) + 1));
+  }
   // ----------- STUDENT CODE END ------------
-  Gui.alertOnce("Wacky is not implemented yet");
+//   Gui.alertOnce("Wacky is not implemented yet");
 
   mesh.calculateFacesArea();
   mesh.updateNormals();
