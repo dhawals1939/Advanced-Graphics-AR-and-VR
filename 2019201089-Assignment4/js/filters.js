@@ -153,7 +153,84 @@ Filters.smooth = function(mesh, iter, delta, curvFlow, scaleDep, implicit) {
   }
   else if(curvFlow)
   {
-      
+      this.triangulate(mesh);
+      let new_verts = [];
+      while(iter--)
+      {
+          let all_neighbors = [], all_weights = [];
+          for(let vertex of verts)
+          {
+              let neighbors = mesh.verticesOnVertex(vertex);
+              
+              all_neighbors.push(neighbors);
+    
+              let weights = [];
+              for(let neighbor of neighbors)
+              {
+                  let he = mesh.edgeBetweenVertices(vertex, neighbor);
+                  let v1 = he.vertex.halfedge.vertex.position.clone(), v2 = he.opposite.next.vertex.position.clone();
+    
+                  let edge_1 = vertex.position.clone(), edge_2 = neighbor.position.clone();
+    
+                  edge_1.sub(v1);
+                  edge_2.sub(v1);
+    
+                  let alpha = edge_1.angleTo(edge_2);
+
+                //   if(isNaN(alpha))
+                //   {
+                //       console.log(vertex.id, neighbor.id, he.id);
+                //   }
+    
+                  edge_1 = vertex.position.clone();
+                  edge_2 = neighbor.position.clone();
+    
+                  edge_1.sub(v2);
+                  edge_2.sub(v2);
+    
+                  let beta = edge_1.angleTo(edge_2);
+
+                  let cot_alpha = !isNaN(alpha)? Math.abs(Math.cos(alpha) / Math.sin(alpha)) : 0;
+                  let cot_beta =  !isNaN(beta)? Math.abs(Math.cos(beta) / Math.sin(beta)) : 0;
+
+                  weights.push(.5 * (cot_alpha + cot_beta));
+              }
+              
+              all_weights.push(weights);
+          }
+
+          for(let vertex of verts)
+          {
+              new_verts.push(vertex.position.clone());
+          }
+
+          let sum_of_neighbor_weights = 0.0;
+          for(let i in new_verts)
+          {
+              let neighbors = all_neighbors[i];
+
+              let _sum_of_neighbors = new THREE.Vector3();
+              for(let j in neighbors)
+              {
+                  _sum_of_neighbors.addScaledVector(neighbors[j].position, all_weights[i][j]);
+                  sum_of_neighbor_weights += all_weights[i][j];
+              }
+
+              _sum_of_neighbors.addScaledVector(verts[i].position.clone().negate(), sum_of_neighbor_weights);
+
+              new_verts[i].addScaledVector(_sum_of_neighbors, delta);
+          }
+
+          for(let i=0; i < new_verts.length; i++)
+          {
+              verts[i].position.set(new_verts[i].x,
+                                    new_verts[i].y,
+                                    new_verts[i].z);
+          }
+
+          new_verts = []
+
+      }
   }
 //   console.log(verts);
   // ----------- STUDENT CODE END ------------
