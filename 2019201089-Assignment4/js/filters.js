@@ -116,6 +116,9 @@ Filters.smooth = function(mesh, iter, delta, curvFlow, scaleDep, implicit) {
 //   console.log(verts);
 
   // ----------- STUDENT CODE BEGIN ------------
+
+
+
   if(!curvFlow)
   {
       let new_verts = [];
@@ -157,7 +160,7 @@ Filters.smooth = function(mesh, iter, delta, curvFlow, scaleDep, implicit) {
       let new_verts = [];
       while(iter--)
       {
-          let all_neighbors = [], all_weights = [];
+          let all_neighbors = [], all_weights = [], _all_weights = .0;
           for(let vertex of verts)
           {
               let neighbors = mesh.verticesOnVertex(vertex);
@@ -178,11 +181,9 @@ Filters.smooth = function(mesh, iter, delta, curvFlow, scaleDep, implicit) {
                   edge_2.sub(v1);
 
                   let cot_alpha = edge_1.clone().dot(edge_2) / edge_1.clone().cross(edge_2).length();
-    
+                
                   if(isNaN(cot_alpha))
-                  {
                       console.log(cot_alpha, he.id, edge_1, edge_2);
-                  }
 
                   edge_1 = vertex.position.clone();
                   edge_2 = neighbor.position.clone();
@@ -194,11 +195,10 @@ Filters.smooth = function(mesh, iter, delta, curvFlow, scaleDep, implicit) {
                   let cot_beta = edge_1.clone().dot(edge_2) / edge_1.clone().cross(edge_2).length();
 
                   if(isNaN(cot_beta))
-                  {
                       console.log(cot_beta, he.id, edge_1, edge_2);
-                  }
                   
                   weights.push(.5 * (cot_alpha + cot_beta));
+                  _all_weights += weights[weights.length - 1];
               }
               
               all_weights.push(weights);
@@ -223,7 +223,8 @@ Filters.smooth = function(mesh, iter, delta, curvFlow, scaleDep, implicit) {
 
               _sum_of_neighbors.addScaledVector(verts[i].position.clone().negate(), sum_of_neighbor_weights);
 
-              new_verts[i].addScaledVector(_sum_of_neighbors, delta);
+              new_verts[i].addScaledVector(_sum_of_neighbors, delta / sum_of_neighbor_weights);
+            //   console.log(verts[i].position, _sum_of_neighbors.clone().multiplyScalar(delta / sum_of_neighbor_weights));
           }
 
           for(let i=0; i < new_verts.length; i++)
@@ -234,7 +235,7 @@ Filters.smooth = function(mesh, iter, delta, curvFlow, scaleDep, implicit) {
               verts[i].position.set(new_verts[i].x,
                                     new_verts[i].y,
                                     new_verts[i].z);
-              verts[i].position.multiplyScalar(1/2000);
+              //verts[i].position.multiplyScalar(2000);
           }
 
           new_verts = []
@@ -439,7 +440,7 @@ Filters.truncate = function(mesh, factor) {
   const verts = mesh.getModifiableVertices();
 
   // ----------- STUDENT CODE BEGIN ------------
-  // ----------- Our reference solution uses 64 lines of code.
+  
   // ----------- STUDENT CODE END ------------
   Gui.alertOnce("Truncate is not implemented yet");
 
