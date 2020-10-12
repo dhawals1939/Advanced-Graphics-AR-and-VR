@@ -168,31 +168,36 @@ Filters.smooth = function(mesh, iter, delta, curvFlow, scaleDep, implicit) {
               for(let neighbor of neighbors)
               {
                   let he = mesh.edgeBetweenVertices(vertex, neighbor);
-                  let v1 = he.vertex.halfedge.vertex.position.clone(), v2 = he.opposite.next.vertex.position.clone();
+                  let v1 = he.next.vertex.position.clone(), v2 = he.opposite.next.vertex.position.clone();
     
                   let edge_1 = vertex.position.clone(), edge_2 = neighbor.position.clone();
+
+                //   console.log(vertex.id, neighbor.id, he.id, he.next.vertex.id, he.opposite.next.vertex.id);
     
                   edge_1.sub(v1);
                   edge_2.sub(v1);
-    
-                  let alpha = edge_1.angleTo(edge_2);
 
-                //   if(isNaN(alpha))
-                //   {
-                //       console.log(vertex.id, neighbor.id, he.id);
-                //   }
+                  let cot_alpha = edge_1.clone().dot(edge_2) / edge_1.clone().cross(edge_2).length();
     
+                  if(isNaN(cot_alpha))
+                  {
+                      console.log(cot_alpha, he.id, edge_1, edge_2);
+                  }
+
                   edge_1 = vertex.position.clone();
                   edge_2 = neighbor.position.clone();
-    
+                  
+
                   edge_1.sub(v2);
                   edge_2.sub(v2);
     
-                  let beta = edge_1.angleTo(edge_2);
+                  let cot_beta = edge_1.clone().dot(edge_2) / edge_1.clone().cross(edge_2).length();
 
-                  let cot_alpha = !isNaN(alpha)? Math.abs(Math.cos(alpha) / Math.sin(alpha)) : 0;
-                  let cot_beta =  !isNaN(beta)? Math.abs(Math.cos(beta) / Math.sin(beta)) : 0;
-
+                  if(isNaN(cot_beta))
+                  {
+                      console.log(cot_beta, he.id, edge_1, edge_2);
+                  }
+                  
                   weights.push(.5 * (cot_alpha + cot_beta));
               }
               
@@ -226,6 +231,7 @@ Filters.smooth = function(mesh, iter, delta, curvFlow, scaleDep, implicit) {
               verts[i].position.set(new_verts[i].x,
                                     new_verts[i].y,
                                     new_verts[i].z);
+              verts[i].position.multiplyScalar(.04);
           }
 
           new_verts = []
