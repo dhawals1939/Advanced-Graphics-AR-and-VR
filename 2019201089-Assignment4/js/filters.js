@@ -228,10 +228,13 @@ Filters.smooth = function(mesh, iter, delta, curvFlow, scaleDep, implicit) {
 
           for(let i=0; i < new_verts.length; i++)
           {
+            //   console.log(verts[i].position, new_verts[i]);
+            if(isNaN(new_verts[i].x) || isNaN(new_verts[i].y) || isNaN(new_verts[i].z))
+                continue;
               verts[i].position.set(new_verts[i].x,
                                     new_verts[i].y,
                                     new_verts[i].z);
-              verts[i].position.multiplyScalar(.04);
+              verts[i].position.multiplyScalar(1/2000);
           }
 
           new_verts = []
