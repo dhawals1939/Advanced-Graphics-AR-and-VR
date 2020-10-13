@@ -7,9 +7,10 @@ var Filters = Filters || {};
 
 // Translate all selected vertices in the mesh by the given x,y,z offsets.
 Filters.translation = function(mesh, x, y, z) {
-  const t = new THREE.Vector3(x, y, z);
+  const verts = mesh.getModifiableVertices(); 
 
-  const verts = mesh.getModifiableVertices();
+  if(verts.length === 0)
+    verts = mesh.getModifiableVertices(); 
 
   const n_vertices = verts.length;
   for (let i = 0; i < n_vertices; ++i) {
@@ -23,7 +24,7 @@ Filters.translation = function(mesh, x, y, z) {
 // Given x,y,z, the desired rotation around each axis, in radians,
 // apply this rotation to all selected vertices in the mesh.
 Filters.rotation = function(mesh, x, y, z) {
-  const verts = mesh.getModifiableVertices();
+  const verts = mesh.getModifiableVertices(); 
 
   // ----------- STUDENT CODE BEGIN ------------
   rotation_matrix = new THREE.Euler(x, y, z, 'XYZ')
@@ -39,7 +40,7 @@ Filters.rotation = function(mesh, x, y, z) {
 // Uniformly scale the position of all selected vertices in the mesh
 // by the provided scale factor s
 Filters.scale = function(mesh, s) {
-  const verts = mesh.getModifiableVertices();
+  const verts = mesh.getModifiableVertices(); 
 
   // ----------- STUDENT CODE BEGIN ------------
   matrix = new THREE.Matrix3()
@@ -56,12 +57,12 @@ Filters.scale = function(mesh, s) {
   mesh.updateNormals();
 };
 
-// estimate the per-vertex gaussian vurvature of the mesh at each vertex.
+// estimate the per-vertex gaussian curvature of the mesh at each vertex.
 // set that vertex's color to some value based on its curvature value.
 // (the precise mapping of curvature to color is left to you)
 Filters.curvature = function(mesh) {
   // ----------- STUDENT CODE BEGIN ------------
-  // ----------- Our reference solution uses 102 lines of code.
+
   // ----------- STUDENT CODE END ------------
   Gui.alertOnce("Curvature is not implemented yet");
 };
@@ -70,7 +71,7 @@ Filters.curvature = function(mesh) {
 // scale the random offset by the provided factor and by
 // the average length of edges at that vertex
 Filters.noise = function(mesh, factor) {
-  const verts = mesh.getModifiableVertices();
+  const verts = mesh.getModifiableVertices(); 
 
   // ----------- STUDENT CODE BEGIN ------------
   for(vertex of verts)
@@ -112,7 +113,7 @@ Filters.noise = function(mesh, factor) {
 // inversion; however, matrix inversion is far slower and less numerically stable
 //
 Filters.smooth = function(mesh, iter, delta, curvFlow, scaleDep, implicit) {
-  const verts = mesh.getModifiableVertices();
+  const verts = mesh.getModifiableVertices(); 
 
   // ----------- STUDENT CODE BEGIN ------------
   if (curvFlow)
@@ -228,8 +229,7 @@ Filters.smooth = function(mesh, iter, delta, curvFlow, scaleDep, implicit) {
 // Sharpen the mesh by moving selected vertices away from the average position
 // of their neighbors (i.e. Laplacian smoothing in the negative direction)
 Filters.sharpen = function(mesh, iter, delta) {
-  const verts = mesh.getModifiableVertices();
-
+  const verts = mesh.getModifiableVertices(); 
   // ----------- STUDENT CODE BEGIN ------------
   this.smooth(mesh, iter, -delta, false, false, false);
   // ----------- STUDENT CODE END ------------
@@ -241,8 +241,7 @@ Filters.sharpen = function(mesh, iter, delta) {
 // Move every selected vertex along its normal direction
 // Scale the amount by the provided factor and average edge length at that vertex
 Filters.inflate = function(mesh, factor) {
-  const verts = mesh.getModifiableVertices();
-
+  const verts = mesh.getModifiableVertices(); 
   // ----------- STUDENT CODE BEGIN ------------
   for(let vertex of verts)
   {
@@ -261,8 +260,7 @@ Filters.inflate = function(mesh, factor) {
 // rotate selected vertices around the Y axis by an amount
 // proportional to its Y value times the scale factor.
 Filters.twist = function(mesh, factor) {
-  const verts = mesh.getModifiableVertices();
-
+   const verts = mesh.getModifiableVertices(); 
   // ----------- STUDENT CODE BEGIN ------------
 
   for(let vert of verts)
@@ -279,7 +277,7 @@ Filters.twist = function(mesh, factor) {
 
 // warp a mesh using a nonlinear mapping of your choice
 Filters.wacky = function(mesh, factor) {
-    const verts = mesh.getModifiableVertices();
+  const verts = mesh.getModifiableVertices(); 
   // ----------- STUDENT CODE BEGIN ------------
   for(let vertex of verts)
   {
@@ -296,8 +294,7 @@ Filters.wacky = function(mesh, factor) {
 
 // Convert the selected faces from arbitrary polygons into all triangles
 Filters.triangulate = function(mesh) {
-  const faces = mesh.getModifiableFaces();
-
+  const faces = mesh.getModifiableFaces(); 
   // ----------- STUDENT CODE BEGIN ------------
   for(let face of faces)
   {   
@@ -314,11 +311,10 @@ Filters.triangulate = function(mesh) {
 };
 
 // wrapper for splitEdgeMakeVert in mesh.js
-Filters.splitEdge = function(mesh) {
+Filters.splitEdge = function(mesh, factor=.5) {
   const verts = mesh.getSelectedVertices();
-
   if (verts.length === 2) {
-    mesh.splitEdgeMakeVert(verts[0], verts[1], 0.5);
+    mesh.splitEdgeMakeVert(verts[0], verts[1], factor);
   } else {
     console.log("ERROR: to use split edge, select exactly 2 adjacent vertices");
   }
@@ -413,12 +409,35 @@ Filters.extrude = function(mesh, factor) {
 // and replacing them with faces. factor specifies the size of the truncation.
 // See the spec for more detail.
 Filters.truncate = function(mesh, factor) {
-  const verts = mesh.getModifiableVertices();
-
+  const verts = mesh.getModifiableVertices(); 
   // ----------- STUDENT CODE BEGIN ------------
-  // ----------- Our reference solution uses 64 lines of code.
+  for(let vertex of verts)
+  {
+    let neighbors = mesh.verticesOnVertex(vertex);
+    let face_set = new Set();
+    for(let neighbor of neighbors)
+    {
+      mesh.setSelectedVertices([neighbor.id, vertex.id]);
+      this.splitEdge(mesh, factor);
+      let faces = mesh.facesOnEdge(neighbor.halfedge);
+      face_set.add(faces[0].id);
+      face_set.add(faces[1].id);
+    }
+
+    neighbors = mesh.verticesOnVertex(vertex);
+    for(let neighbor of neighbors)
+    {
+      let halfedge = mesh.edgeBetweenVertices(neighbor, vertex);
+      mesh.setSelectedVertices([halfedge.next.vertex.id, neighbor.id]);
+      mesh.setSelectedFaces([halfedge.face.id]);
+      this.splitFace(mesh);
+    }
+    vertex.position = neighbors[0].position.clone();
+  }
+  // mesh.setSelectedFaces([]);
+  // mesh.setSelectedVertices([]);
   // ----------- STUDENT CODE END ------------
-  Gui.alertOnce("Truncate is not implemented yet");
+  //   Gui.alertOnce("Truncate is not implemented yet");
 
   mesh.calculateFacesArea();
   mesh.updateNormals();
