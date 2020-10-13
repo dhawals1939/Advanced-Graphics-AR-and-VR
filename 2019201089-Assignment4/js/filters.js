@@ -116,130 +116,90 @@ Filters.smooth = function(mesh, iter, delta, curvFlow, scaleDep, implicit) {
 //   console.log(verts);
 
   // ----------- STUDENT CODE BEGIN ------------
-
-
-
-  if(!curvFlow)
-  {
-      let new_verts = [];
-      while(iter--)
-      {
-          for(let vertex of verts)
-          {
-              new_verts.push(vertex.position.clone());
-          }
-
-          for(let i in new_verts)
-          {
-              let neighbors = mesh.verticesOnVertex(verts[i]);
-
-              let _sum_of_neighbors = new THREE.Vector3();
-              for(let neighbor of neighbors)
-              {
-                  _sum_of_neighbors.add(neighbor.position);
-              }
-
-              _sum_of_neighbors.addScaledVector(verts[i].position.clone().negate(), neighbors.length);
-
-              new_verts[i].addScaledVector(_sum_of_neighbors, delta);
-          }
-
-          for(let i=0; i < new_verts.length; i++)
-          {
-              verts[i].position.set(new_verts[i].x,
-                                    new_verts[i].y,
-                                    new_verts[i].z);
-          }
-
-          new_verts = []
-      }
-  }
-  else if(curvFlow)
+  if (curvFlow)
   {
       this.triangulate(mesh);
+  }   
+
+  let neighbors = [];
+  
+  for(vertex of verts)
+  {
+      neighbors.push(mesh.verticesOnVertex(vertex));
+  }
+
+  while(iter--)
+  {
+      let weights = [], vertex_assosiated_area = [], sum_area = 0;
       let new_verts = [];
-      while(iter--)
+
+      for(let i in verts)
       {
-          let all_neighbors = [], all_weights = [], _all_weights = .0;
-          for(let vertex of verts)
+          let neighbor_weights = [];
+
+          let sum_of_weighted_neighbors = new THREE.Vector3(), neighbor_weight_sum = .0;
+          for(let j in neighbors[i])
           {
-              let neighbors = mesh.verticesOnVertex(vertex);
-              
-              all_neighbors.push(neighbors);
-    
-              let weights = [];
-              for(let neighbor of neighbors)
-              {
-                  let he = mesh.edgeBetweenVertices(vertex, neighbor);
-                  let v1 = he.next.vertex.position.clone(), v2 = he.opposite.next.vertex.position.clone();
-    
-                  let edge_1 = vertex.position.clone(), edge_2 = neighbor.position.clone();
-
-                //   console.log(vertex.id, neighbor.id, he.id, he.next.vertex.id, he.opposite.next.vertex.id);
-    
-                  edge_1.sub(v1);
-                  edge_2.sub(v1);
-
-                  let cot_alpha = edge_1.clone().dot(edge_2) / edge_1.clone().cross(edge_2).length();
+              if(curvFlow)
+              {   
+                let he = mesh.edgeBetweenVertices(verts[i], neighbors[i][j]);
+                let v1 = he.next.vertex.position.clone(), v2 = he.opposite.next.vertex.position.clone();
                 
-                  if(isNaN(cot_alpha))
-                      console.log(cot_alpha, he.id, edge_1, edge_2);
+                let edge_1 = verts[i].position.clone(), edge_2 = neighbors[i][j].position.clone();
+                
+                edge_1.sub(v1);
+                edge_2.sub(v1);
+                
+                let cot_alpha = edge_1.clone().dot(edge_2) / edge_1.clone().cross(edge_2).length();
+                
+                edge_1 = verts[i].position.clone(), edge_2 = neighbors[i][j].position.clone();
+                
+                edge_1.sub(v2);
+                edge_2.sub(v1);
+                
+                let cot_beta = edge_1.clone().dot(edge_2) / edge_1.clone().cross(edge_2).length();
 
-                  edge_1 = vertex.position.clone();
-                  edge_2 = neighbor.position.clone();
-                  
+                sum_of_weighted_neighbors.addScaledVector(neighbors[i][j].clone(), .5 *(cot_alpha + cot_beta));
 
-                  edge_1.sub(v2);
-                  edge_2.sub(v2);
-    
-                  let cot_beta = edge_1.clone().dot(edge_2) / edge_1.clone().cross(edge_2).length();
+                neighbor_weight_sum += .5 * (cot_alpha, cot_beta);
 
-                  if(isNaN(cot_beta))
-                      console.log(cot_beta, he.id, edge_1, edge_2);
-                  
-                  weights.push(.5 * (cot_alpha + cot_beta));
-                  _all_weights += weights[weights.length - 1];
+
+                neighbor_weights.push(0.5 * ( cot_alpha + cot_beta));
               }
-              
-              all_weights.push(weights);
-          }
-
-          for(let vertex of verts)
-          {
-              new_verts.push(vertex.position.clone());
-          }
-
-          let sum_of_neighbor_weights = 0.0;
-          for(let i in new_verts)
-          {
-              let neighbors = all_neighbors[i];
-
-              let _sum_of_neighbors = new THREE.Vector3();
-              for(let j in neighbors)
+              else
               {
-                  _sum_of_neighbors.addScaledVector(neighbors[j].position, all_weights[i][j]);
-                  sum_of_neighbor_weights += all_weights[i][j];
+                sum_of_weighted_neighbors.add(neighbors[i][j].clone());
+                neighbor_weight_sum = 1
+                neighbor_weights.push(1);
               }
+    
+              
+            }
 
-              _sum_of_neighbors.addScaledVector(verts[i].position.clone().negate(), sum_of_neighbor_weights);
+            let Lp = sum_of_weighted_neighbors.clone();
+  
+            Lp.addScaledVector(verts[i].position.clone().negate(), neighbor_weight_sum);
 
-              new_verts[i].addScaledVector(_sum_of_neighbors, delta / sum_of_neighbor_weights);
-            //   console.log(verts[i].position, _sum_of_neighbors.clone().multiplyScalar(delta / sum_of_neighbor_weights));
-          }
+            faces = mesh.facesOnVertex(verts[i]);
 
-          for(let i=0; i < new_verts.length; i++)
-          {
-            //   console.log(verts[i].position, new_verts[i]);
-            if(isNaN(new_verts[i].x) || isNaN(new_verts[i].y) || isNaN(new_verts[i].z))
-                continue;
-              verts[i].position.set(new_verts[i].x,
-                                    new_verts[i].y,
-                                    new_verts[i].z);
-              //verts[i].position.multiplyScalar(2000);
-          }
+            let associated_area = .0
+            for(let face of faces)
+            {
+              if(scaleDep)
+                associated_area += mesh.calculateFaceArea(face);
+            }
+            if(scaleDep)
+            {
+              vertex_assosiated_area.push(associated_area);
+              sum_area += associated_area;
+            }
+            else
+            {
+              vertex_assosiated_area.push(1);
+              sum_area = 1;
+            }
 
-          new_verts = []
-
+            weights.push(neighbor_weights);
       }
   }
 //   console.log(verts);
@@ -440,7 +400,7 @@ Filters.truncate = function(mesh, factor) {
   const verts = mesh.getModifiableVertices();
 
   // ----------- STUDENT CODE BEGIN ------------
-  
+  // ----------- Our reference solution uses 64 lines of code.
   // ----------- STUDENT CODE END ------------
   Gui.alertOnce("Truncate is not implemented yet");
 
