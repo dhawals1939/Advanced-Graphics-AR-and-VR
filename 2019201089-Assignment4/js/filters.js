@@ -113,7 +113,6 @@ Filters.noise = function(mesh, factor) {
 //
 Filters.smooth = function(mesh, iter, delta, curvFlow, scaleDep, implicit) {
   const verts = mesh.getModifiableVertices();
-//   console.log(verts);
 
   // ----------- STUDENT CODE BEGIN ------------
   if (curvFlow)
@@ -137,6 +136,7 @@ Filters.smooth = function(mesh, iter, delta, curvFlow, scaleDep, implicit) {
       {
         new_verts.push(verts[i].position.clone());
 
+        let max_ca = max_cb = -Infinity , min_ca = min_cb = Infinity;
         let sum_of_weighted_neighbors = new THREE.Vector3(), neighbor_weight_sum = .0;
         for(let j in neighbors[i])
         {
@@ -150,19 +150,36 @@ Filters.smooth = function(mesh, iter, delta, curvFlow, scaleDep, implicit) {
               edge_1.sub(v1);
               edge_2.sub(v1);
               
-              let cot_alpha = edge_1.clone().dot(edge_2) / edge_1.clone().cross(edge_2).length();
+              let cos_alpha = edge_1.clone().dot(edge_2);
+              let sin_alpha = edge_1.clone().cross(edge_2).length();
+
+              let alpha = Math.atan2(sin_alpha, cos_alpha);
+              let cot_alpha = 1 / Math.tan(alpha); 
               
               edge_1 = verts[i].position.clone(), edge_2 = neighbors[i][j].position.clone();
               
               edge_1.sub(v2);
               edge_2.sub(v1);
+
+              let cos_beta = edge_1.clone().dot(edge_2);
+              let sin_beta = edge_1.clone().cross(edge_2).length();
+
+              let beta = Math.atan2(sin_beta, cos_beta);
+              let cot_beta = 1 / Math.tan(beta); 
+
+              let angle = 1e-6;
+              let cot_max = 100;
               
-              let cot_beta = edge_1.clone().dot(edge_2) / edge_1.clone().cross(edge_2).length();
+              let wij = .5 * (cos_alpha + cos_beta);
 
-              sum_of_weighted_neighbors.addScaledVector(neighbors[i][j].position.clone(), .5 *(cot_alpha + cot_beta));
+              if(wij > cot_max)
+                wij = cot_max
+              else if(wij < -cot_max)
+                wij = -cot_max
 
-              neighbor_weight_sum += .5 * (cot_alpha, cot_beta);
-
+              sum_of_weighted_neighbors.addScaledVector(neighbors[i][j].position.clone(), wij);
+              
+              neighbor_weight_sum += wij;
             }
             else
             {
@@ -203,7 +220,9 @@ Filters.smooth = function(mesh, iter, delta, curvFlow, scaleDep, implicit) {
       {
         let avg_area = sum_area / new_verts.length;
 
+        new_verts[i].sub(verts[i].position);
         new_verts[i].multiplyScalar(avg_area);
+        new_verts[i].add(verts[i].position);
 
         verts[i].position.set(new_verts[i].x,
                               new_verts[i].y,
