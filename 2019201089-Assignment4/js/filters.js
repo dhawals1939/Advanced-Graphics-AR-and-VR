@@ -414,17 +414,14 @@ Filters.truncate = function(mesh, factor) {
   for(let vertex of verts)
   {
     let neighbors = mesh.verticesOnVertex(vertex);
-    let face_set = new Set();
     for(let neighbor of neighbors)
     {
       mesh.setSelectedVertices([neighbor.id, vertex.id]);
       this.splitEdge(mesh, factor);
-      let faces = mesh.facesOnEdge(neighbor.halfedge);
-      face_set.add(faces[0].id);
-      face_set.add(faces[1].id);
     }
 
     neighbors = mesh.verticesOnVertex(vertex);
+
     for(let neighbor of neighbors)
     {
       let halfedge = mesh.edgeBetweenVertices(neighbor, vertex);
@@ -432,6 +429,7 @@ Filters.truncate = function(mesh, factor) {
       mesh.setSelectedFaces([halfedge.face.id]);
       this.splitFace(mesh);
     }
+
     vertex.position = neighbors[0].position.clone();
   }
   // mesh.setSelectedFaces([]);
