@@ -130,79 +130,86 @@ Filters.smooth = function(mesh, iter, delta, curvFlow, scaleDep, implicit) {
 
   while(iter--)
   {
-      let weights = [], vertex_assosiated_area = [], sum_area = 0;
+      let vertex_assosiated_area = [], sum_area = 0;
       let new_verts = [];
 
       for(let i in verts)
       {
-          let neighbor_weights = [];
+        new_verts.push(verts[i].position.clone());
 
-          let sum_of_weighted_neighbors = new THREE.Vector3(), neighbor_weight_sum = .0;
-          for(let j in neighbors[i])
-          {
-              if(curvFlow)
-              {   
-                let he = mesh.edgeBetweenVertices(verts[i], neighbors[i][j]);
-                let v1 = he.next.vertex.position.clone(), v2 = he.opposite.next.vertex.position.clone();
-                
-                let edge_1 = verts[i].position.clone(), edge_2 = neighbors[i][j].position.clone();
-                
-                edge_1.sub(v1);
-                edge_2.sub(v1);
-                
-                let cot_alpha = edge_1.clone().dot(edge_2) / edge_1.clone().cross(edge_2).length();
-                
-                edge_1 = verts[i].position.clone(), edge_2 = neighbors[i][j].position.clone();
-                
-                edge_1.sub(v2);
-                edge_2.sub(v1);
-                
-                let cot_beta = edge_1.clone().dot(edge_2) / edge_1.clone().cross(edge_2).length();
-
-                sum_of_weighted_neighbors.addScaledVector(neighbors[i][j].clone(), .5 *(cot_alpha + cot_beta));
-
-                neighbor_weight_sum += .5 * (cot_alpha, cot_beta);
-
-
-                neighbor_weights.push(0.5 * ( cot_alpha + cot_beta));
-              }
-              else
-              {
-                sum_of_weighted_neighbors.add(neighbors[i][j].clone());
-                neighbor_weight_sum = 1
-                neighbor_weights.push(1);
-              }
-    
+        let sum_of_weighted_neighbors = new THREE.Vector3(), neighbor_weight_sum = .0;
+        for(let j in neighbors[i])
+        {
+            if(curvFlow)
+            {   
+              let he = mesh.edgeBetweenVertices(verts[i], neighbors[i][j]);
+              let v1 = he.next.vertex.position.clone(), v2 = he.opposite.next.vertex.position.clone();
               
-            }
+              let edge_1 = verts[i].position.clone(), edge_2 = neighbors[i][j].position.clone();
+              
+              edge_1.sub(v1);
+              edge_2.sub(v1);
+              
+              let cot_alpha = edge_1.clone().dot(edge_2) / edge_1.clone().cross(edge_2).length();
+              
+              edge_1 = verts[i].position.clone(), edge_2 = neighbors[i][j].position.clone();
+              
+              edge_1.sub(v2);
+              edge_2.sub(v1);
+              
+              let cot_beta = edge_1.clone().dot(edge_2) / edge_1.clone().cross(edge_2).length();
 
-            let Lp = sum_of_weighted_neighbors.clone();
-  
-            Lp.addScaledVector(verts[i].position.clone().negate(), neighbor_weight_sum);
+              sum_of_weighted_neighbors.addScaledVector(neighbors[i][j].position.clone(), .5 *(cot_alpha + cot_beta));
 
-            faces = mesh.facesOnVertex(verts[i]);
+              neighbor_weight_sum += .5 * (cot_alpha, cot_beta);
 
-            let associated_area = .0
-            for(let face of faces)
-            {
-              if(scaleDep)
-                associated_area += mesh.calculateFaceArea(face);
-            }
-            if(scaleDep)
-            {
-              vertex_assosiated_area.push(associated_area);
-              sum_area += associated_area;
             }
             else
             {
-              vertex_assosiated_area.push(1);
-              sum_area = 1;
+              sum_of_weighted_neighbors.add(neighbors[i][j].position.clone());
+              neighbor_weight_sum += 1;
             }
+        }
 
-            weights.push(neighbor_weights);
+        faces = mesh.facesOnVertex(verts[i]);
+
+        let associated_area = .0
+        for(let face of faces)
+        {
+          if(scaleDep)
+            associated_area += mesh.calculateFaceArea(face);
+        }
+        if(scaleDep)
+        {
+          vertex_assosiated_area.push(associated_area);
+          sum_area += associated_area;
+        }
+        else
+        {
+          vertex_assosiated_area.push(1);
+          sum_area += 1;
+        }
+
+        new_verts[i].addScaledVector(
+          sum_of_weighted_neighbors.addScaledVector(
+                                                      verts[i].position.clone().negate(), 
+                                                      neighbor_weight_sum
+                                                    ), 
+          delta / vertex_assosiated_area[i]
+          );
+      }
+
+      for(let i in new_verts)
+      {
+        let avg_area = sum_area / new_verts.length;
+
+        new_verts[i].multiplyScalar(avg_area);
+
+        verts[i].position.set(new_verts[i].x,
+                              new_verts[i].y,
+                              new_verts[i].z);
       }
   }
-//   console.log(verts);
   // ----------- STUDENT CODE END ------------
   //   Gui.alertOnce("Smooth is not implemented yet");
   mesh.calculateFacesArea();
