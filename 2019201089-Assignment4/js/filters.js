@@ -153,29 +153,19 @@ Filters.smooth = function(mesh, iter, delta, curvFlow, scaleDep, implicit) {
               let cos_alpha = edge_1.clone().dot(edge_2);
               let sin_alpha = edge_1.clone().cross(edge_2).length();
 
-              let alpha = Math.atan2(sin_alpha, cos_alpha);
-              let cot_alpha = 1 / Math.tan(alpha); 
+              let cot_alpha = cos_alpha / sin_alpha;
               
               edge_1 = verts[i].position.clone(), edge_2 = neighbors[i][j].position.clone();
               
               edge_1.sub(v2);
-              edge_2.sub(v1);
+              edge_2.sub(v2);
 
               let cos_beta = edge_1.clone().dot(edge_2);
               let sin_beta = edge_1.clone().cross(edge_2).length();
 
-              let beta = Math.atan2(sin_beta, cos_beta);
-              let cot_beta = 1 / Math.tan(beta); 
+              let cot_beta = cos_beta / sin_beta;
 
-              let angle = 1e-6;
-              let cot_max = 100;
-              
-              let wij = .5 * (cos_alpha + cos_beta);
-
-              if(wij > cot_max)
-                wij = cot_max
-              else if(wij < -cot_max)
-                wij = -cot_max
+              let wij = .5 * (cot_alpha + cot_beta);
 
               sum_of_weighted_neighbors.addScaledVector(neighbors[i][j].position.clone(), wij);
               
