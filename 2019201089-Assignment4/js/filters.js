@@ -416,7 +416,7 @@ Filters.extrude = function(mesh, factor) {
     for(let i = 0; i < new_verts.length; i++)
     {
         mesh.splitFaceMakeEdge(face, new_verts[i], new_verts[(i + 1) % new_verts.length]);
-        
+
         mesh.joinFaceKillEdge(
             new_verts[i].halfedge.opposite.next.next.opposite.face,
             new_verts[i].halfedge.opposite.face,
@@ -443,27 +443,52 @@ Filters.extrude = function(mesh, factor) {
 Filters.truncate = function(mesh, factor) {
   const verts = mesh.getModifiableVertices(); 
   // ----------- STUDENT CODE BEGIN ------------
+  let vert_positons = [];
   for(let vertex of verts)
   {
-    let neighbors = mesh.verticesOnVertex(vertex);
-    for(let neighbor of neighbors)
-    {
-      mesh.setSelectedVertices([neighbor.id, vertex.id]);
-      this.splitEdge(mesh, factor);
-    }
-
-    neighbors = mesh.verticesOnVertex(vertex);
-
-    for(let neighbor of neighbors)
-    {
-      let halfedge = mesh.edgeBetweenVertices(neighbor, vertex);
-      mesh.setSelectedVertices([halfedge.next.vertex.id, neighbor.id]);
-      mesh.setSelectedFaces([halfedge.face.id]);
-      this.splitFace(mesh);
-    }
-
-    vertex.position = neighbors[0].position.clone();
+    vert_positons.push(vertex.position.clone());
   }
+
+  for(let i=0; i < verts.length; i++)
+  {
+      let old_neighbors = mesh.verticesOnVertex(verts[i]);
+      for(let j=0; j < old_neighbors.length - 1; j++)
+      {
+        mesh.setSelectedVertices([verts[i].id, old_neighbors[j].id]);
+        this.splitEdge(mesh);
+      }
+
+      let new_neighbors = new Set(mesh.verticesOnVertex(verts[i]));
+
+      let left_out_old_neighbor = old_neighbors.filter(x => new_neighbors.has(x));
+      let old_neighbors_set = new Set(old_neighbors);
+      let newly_add_neighbors = [...new_neighbors].filter(x => !old_neighbors_set.has(x));
+
+      console.log(verts[i],newly_add_neighbors);
+      let halfedge_1 = mesh.edgeBetweenVertices(verts[i], newly_add_neighbors[0]);
+      let halfedge_2 = mesh.edgeBetweenVertices(verts[i], newly_add_neighbors[1]);
+      
+      let faces_on_he1 = new Set([halfedge_1.face, halfedge_1.opposite.face]);
+      let faces_on_he2 = new Set([halfedge_2.face, halfedge_2.opposite.face]);
+
+      let common_face = [...faces_on_he1].filter(x=>faces_on_he2.has(x));
+
+      mesh.setSelectedFaces([common_face[0].id]);
+      mesh.setSelectedVertices([newly_add_neighbors[0].id, newly_add_neighbors[1].id]);
+      this.splitFace(mesh);
+
+      let direction_to_move = left_out_old_neighbor[0].position.clone().sub(verts[i].position);
+
+      vert_positons[i].addScaledVector(direction_to_move, factor);
+  }
+
+  for(let i=0; i < verts.length; i++)
+  {
+    verts[i].position.set(vert_positons[i].x,
+                      vert_positons[i].y,
+                      vert_positons[i].z);
+  }
+
   // ----------- STUDENT CODE END ------------
   //   Gui.alertOnce("Truncate is not implemented yet");
 
