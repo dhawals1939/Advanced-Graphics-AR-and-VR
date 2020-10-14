@@ -395,11 +395,43 @@ Filters.joinFaces = function(mesh) {
 // See the spec for more detail.
 Filters.extrude = function(mesh, factor) {
   const faces = mesh.getModifiableFaces();
-
   // ----------- STUDENT CODE BEGIN ------------
-  // ----------- Our reference solution uses 32 lines of code.
+  for(let face of faces)
+  {
+    let halfedges = mesh.edgesOnFace(face);
+    let new_verts = [];
+
+    for(let i in halfedges)
+    {
+        let new_vert = mesh.splitEdgeMakeVert(halfedges[i].vertex,
+                               halfedges[i].opposite.vertex, 0);
+
+        let adj_face = new_vert.halfedge.opposite.face;
+       
+        mesh.splitFaceMakeEdge(adj_face, new_vert.halfedge.vertex, 
+                                new_vert.halfedge.opposite.next.vertex);
+        new_verts.push(new_vert);
+    }
+
+    for(let i = 0; i < new_verts.length; i++)
+    {
+        mesh.splitFaceMakeEdge(face, new_verts[i], new_verts[(i + 1) % new_verts.length]);
+        
+        mesh.joinFaceKillEdge(
+            new_verts[i].halfedge.opposite.next.next.opposite.face,
+            new_verts[i].halfedge.opposite.face,
+            new_verts[i].halfedge.opposite.next.vertex,
+            new_verts[i].halfedge.vertex
+                            );
+    }
+
+    for(let new_vert of new_verts)
+    {
+        new_vert.position.addScaledVector(face.normal.normalize(), factor);
+    }
+  }
   // ----------- STUDENT CODE END ------------
-  Gui.alertOnce("Extrude is not implemented yet");
+//   Gui.alertOnce("Extrude is not implemented yet");
 
   mesh.calculateFacesArea();
   mesh.updateNormals();
@@ -432,8 +464,6 @@ Filters.truncate = function(mesh, factor) {
 
     vertex.position = neighbors[0].position.clone();
   }
-  // mesh.setSelectedFaces([]);
-  // mesh.setSelectedVertices([]);
   // ----------- STUDENT CODE END ------------
   //   Gui.alertOnce("Truncate is not implemented yet");
 
