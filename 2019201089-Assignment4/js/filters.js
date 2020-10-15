@@ -394,37 +394,40 @@ Filters.joinFaces = function(mesh) {
 // vector, scaled by the provided factor.
 // See the spec for more detail.
 Filters.extrude = function(mesh, factor) {
-  const faces = mesh.getModifiableFaces();
+  const _faces = mesh.getModifiableFaces();
+
+  let faces = [..._faces];
   // ----------- STUDENT CODE BEGIN ------------
   for(let face of faces)
   {
     let halfedges = mesh.edgesOnFace(face);
     let new_verts = [];
-
-    for(let i in halfedges)
+    
+    for(let i=0; i < halfedges.length; i++)
     {
-        let new_vert = mesh.splitEdgeMakeVert(halfedges[i].vertex,
-                               halfedges[i].opposite.vertex, 0);
-
-        let adj_face = new_vert.halfedge.opposite.face;
-       
-        mesh.splitFaceMakeEdge(adj_face, new_vert.halfedge.vertex, 
-                                new_vert.halfedge.opposite.next.vertex);
-        new_verts.push(new_vert);
+      let new_vert = mesh.splitEdgeMakeVert(halfedges[i].vertex,
+      halfedges[i].opposite.vertex, 0);
+      
+      let adj_face = new_vert.halfedge.opposite.face;
+      
+      mesh.splitFaceMakeEdge(adj_face, new_vert.halfedge.vertex, 
+      new_vert.halfedge.opposite.next.vertex);
+      new_verts.push(new_vert);
     }
-
+    
     for(let i = 0; i < new_verts.length; i++)
     {
-        mesh.splitFaceMakeEdge(face, new_verts[i], new_verts[(i + 1) % new_verts.length]);
-
-        mesh.joinFaceKillEdge(
-            new_verts[i].halfedge.opposite.next.next.opposite.face,
-            new_verts[i].halfedge.opposite.face,
-            new_verts[i].halfedge.opposite.next.vertex,
-            new_verts[i].halfedge.vertex
-                            );
+      mesh.splitFaceMakeEdge(face, new_verts[i], new_verts[(i + 1) % new_verts.length]);
+      
+      mesh.joinFaceKillEdge(
+        new_verts[i].halfedge.opposite.next.next.opposite.face,
+        new_verts[i].halfedge.opposite.face,
+        new_verts[i].halfedge.opposite.next.vertex,
+        new_verts[i].halfedge.vertex
+        );
     }
-
+      
+    console.log(faces.length);
     for(let new_vert of new_verts)
     {
         new_vert.position.addScaledVector(face.normal.normalize(), factor);
@@ -432,7 +435,6 @@ Filters.extrude = function(mesh, factor) {
   }
   // ----------- STUDENT CODE END ------------
 //   Gui.alertOnce("Extrude is not implemented yet");
-
   mesh.calculateFacesArea();
   mesh.updateNormals();
 };
@@ -441,7 +443,8 @@ Filters.extrude = function(mesh, factor) {
 // and replacing them with faces. factor specifies the size of the truncation.
 // See the spec for more detail.
 Filters.truncate = function(mesh, factor) {
-  const verts = mesh.getModifiableVertices(); 
+  const _verts = mesh.getModifiableVertices(); 
+  let verts = [..._verts];
   // ----------- STUDENT CODE BEGIN ------------
   let vert_positons = [];
   for(let vertex of verts)
@@ -518,7 +521,8 @@ Filters.truncate = function(mesh, factor) {
   }
   // ----------- STUDENT CODE END ------------
   //   Gui.alertOnce("Truncate is not implemented yet");
-
+  mesh.setSelectedFaces([]);
+  mesh.setSelectedVertices([]);
   mesh.calculateFacesArea();
   mesh.updateNormals();
 };
@@ -550,67 +554,70 @@ Filters.splitLong = function(mesh, factor) {
   mesh.updateNormals();
 };
 
+// let face_wise_new_verts = [];
+// let new_faces = [];
+// for(let face of faces)
+// {
+//     let initial_verts = new Set(mesh.verticesOnFace(face));
+//     let halfedges = mesh.edgesOnFace(face);
+//     let new_verts = [];
+//     for(let he of halfedges)
+//     {
+//         let old_vertex_pos = he.opposite.vertex.position.clone();
+//         let new_vert = mesh.splitEdgeMakeVert(he.vertex, he.opposite.vertex, 0);
+//         new_verts.push([new_vert,
+//                         old_vertex_pos.clone().sub(new_vert.position)]);
+//     }
+//     face_wise_new_verts.push(new_verts);
+
+//     for(let i=0; i < new_verts.length; i++)
+//     {
+//         new_faces.push(mesh.splitFaceMakeEdge(face, new_verts[i][0], new_verts[(i+1)%new_verts.length][0]));
+//     }
+// }
+
+// for(let f of face_wise_new_verts)
+// {
+//     for(let [v, dir] of f)
+//     {
+//         v.position.addScaledVector(dir, .5)
+//     }
+// }
+// if(stop<levels)
+// {
+//   console.log(stop);
+//   let f =[];
+//   for(let _f of faces)
+//     f.push(_f.id);
+  
+//   for(let _f of new_faces)
+//     f.push(_f.id);
+  
+//   f = [...new Set(f)];
+  
+//   mesh.setSelectedFaces(f);
+// }
+// else
+// {
+//   mesh.setSelectedFaces([]);
+// }
+// stop++;
+// // Filters.triangulate(mesh); 
+
+
+
 // Triangulate a mesh, and apply triangular subdivision to its faces.
 // Repeat for the specified number of levels.
 Filters.triSubdiv = function(mesh, levels) {
-  Filters.triangulate(mesh);
-  stop=0;
+ Filters.triangulate(mesh);
  for (let l = 0; l < levels; l++) {
-    let faces = mesh.getModifiableFaces();
+    const faces = mesh.getModifiableFaces();
     // ----------- STUDENT CODE BEGIN ------------
-    let face_wise_new_verts = [];
-    let new_faces = [];
-    for(let face of faces)
-    {
-        let initial_verts = new Set(mesh.verticesOnFace(face));
-        let halfedges = mesh.edgesOnFace(face);
-        let new_verts = [];
-        for(let he of halfedges)
-        {
-            let old_vertex_pos = he.opposite.vertex.position.clone();
-            let new_vert = mesh.splitEdgeMakeVert(he.vertex, he.opposite.vertex, 0);
-            new_verts.push([new_vert,
-                            old_vertex_pos.clone().sub(new_vert.position)]);
-        }
-        face_wise_new_verts.push(new_verts);
 
-        for(let i=0; i < new_verts.length; i++)
-        {
-            new_faces.push(mesh.splitFaceMakeEdge(face, new_verts[i][0], new_verts[(i+1)%new_verts.length][0]));
-        }
-    }
-
-    for(let f of face_wise_new_verts)
-    {
-        for(let [v, dir] of f)
-        {
-            v.position.addScaledVector(dir, .5)
-        }
-    }
-    if(stop<levels)
-    {
-      console.log(stop);
-      let f =[];
-      for(let _f of faces)
-        f.push(_f.id);
-      
-      for(let _f of new_faces)
-        f.push(_f.id);
-      
-      f = [...new Set(f)];
-      
-      mesh.setSelectedFaces(f);
-    }
-    else
-    {
-      mesh.setSelectedFaces([]);
-    }
-    stop++;
-    
     // ----------- STUDENT CODE END ------------
     // Gui.alertOnce("Triangle subdivide is not implemented yet");
   }
-
+  // Filters.triangulate(mesh);
 
   mesh.calculateFacesArea();
   mesh.updateNormals();
