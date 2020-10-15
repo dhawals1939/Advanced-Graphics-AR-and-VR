@@ -659,7 +659,7 @@ Filters.triSubdiv = function(mesh, levels) {
       }
       face_old_edges_dest.push(old_edges_dest);
     }
-
+    let new_faces = [];
     for(let i=0; i<face_old_edges_dest.length; i++)
     {
       let new_verts = [];
@@ -679,9 +679,23 @@ Filters.triSubdiv = function(mesh, levels) {
 
       for(let v=0; v<new_verts.length; v++)
       {
-        mesh.splitFaceMakeEdge(faces[i], new_verts[v], new_verts[(v+1)%new_verts.length]);
+        new_faces.push(mesh.splitFaceMakeEdge(faces[i], new_verts[v], new_verts[(v+1)%new_verts.length]));
       }
     }
+
+    let to_select_faces = [];
+    for(let face of faces)
+    {
+      to_select_faces.push(face.id);
+    }
+
+    for(let face of new_faces)
+    {
+      to_select_faces.push(face.id);
+    }
+
+    mesh.setSelectedFaces(to_select_faces);
+
     // ----------- STUDENT CODE END ------------
     // Gui.alertOnce("Triangle subdivide is not implemented yet");
   }
