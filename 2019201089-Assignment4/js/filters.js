@@ -611,7 +611,8 @@ Filters.splitLong = function(mesh, factor) {
 Filters.triSubdiv = function(mesh, levels) {
  Filters.triangulate(mesh);
  for (let l = 0; l < levels; l++) {
-    const _faces = mesh.getModifiableFaces();
+     const _faces = mesh.getModifiableFaces();
+     let _adjacent_face = [];
 
     // ----------- STUDENT CODE BEGIN ----------
     let faces = [..._faces];
@@ -638,20 +639,20 @@ Filters.triSubdiv = function(mesh, levels) {
         {
           let new_vert = mesh.splitEdgeMakeVert(he.vertex, he.opposite.vertex, .5);
   
-          new_verts.push([new_vert]);
+          new_verts.push(new_vert);
         }
         else{
-          new_verts.push([he.vertex])
+          new_verts.push(he.vertex)
         }
       }
 
       for(let v=0; v<new_verts.length; v++)
       {
-        console.log(faces[i], new_verts[v], new_verts[(v+1)%new_verts.length]);
-        // mesh.splitFaceMakeEdge(faces[i], new_verts[v], new_verts[(v+1)%new_verts.length]);
+        // console.log(faces[i], new_verts[v], new_verts[(v+1)%new_verts.length]);
+        mesh.splitFaceMakeEdge(faces[i], new_verts[v], new_verts[(v+1)%new_verts.length]);
       }
     }
-    mesh.setSelectedFaces([]);
+    
     // ----------- STUDENT CODE END ------------
     // Gui.alertOnce("Triangle subdivide is not implemented yet");
   }

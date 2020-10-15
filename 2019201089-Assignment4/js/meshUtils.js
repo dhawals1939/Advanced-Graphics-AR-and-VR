@@ -296,6 +296,7 @@ Mesh.prototype.joinEdgeKillVert = function(v1, v2, v3) {
 // returns the new face (which points to one of the new halfedges)
 Mesh.prototype.splitFaceMakeEdge = function(f, v1, v2, vertOnF, switchFaces) {
   // Go around f and find halfedges adjacent to v1 and v2
+  console.log('hi');
   let heToV2, heToV1;
   let heFromV1, heFromV2;
   // also build a string to track relative locations of v1, v2, and vertOnF
