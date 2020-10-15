@@ -489,7 +489,6 @@ Filters.truncate = function(mesh, factor) {
         }
       }
 
-    //   console.log(verts[i],newly_add_neighbors);
       let halfedge_1 = mesh.edgeBetweenVertices(verts[i], newly_add_neighbors[0]);
       let halfedge_2 = mesh.edgeBetweenVertices(verts[i], newly_add_neighbors[1]);
       
@@ -509,7 +508,6 @@ Filters.truncate = function(mesh, factor) {
 
   for(let [v, dir] of vertex_movement_list)
   {
-    // console.log(v, dir);
     v.position.addScaledVector( dir, factor);
   }
   for(let i=0; i < verts.length; i++)
@@ -518,7 +516,6 @@ Filters.truncate = function(mesh, factor) {
                       vert_positons[i].y,
                       vert_positons[i].z);
   }
-
   // ----------- STUDENT CODE END ------------
   //   Gui.alertOnce("Truncate is not implemented yet");
 
@@ -557,14 +554,63 @@ Filters.splitLong = function(mesh, factor) {
 // Repeat for the specified number of levels.
 Filters.triSubdiv = function(mesh, levels) {
   Filters.triangulate(mesh);
-
-  for (let l = 0; l < levels; l++) {
-    const faces = mesh.getModifiableFaces();
+  stop=0;
+ for (let l = 0; l < levels; l++) {
+    let faces = mesh.getModifiableFaces();
     // ----------- STUDENT CODE BEGIN ------------
-    // ----------- Our reference solution uses 43 lines of code.
+    let face_wise_new_verts = [];
+    let new_faces = [];
+    for(let face of faces)
+    {
+        let initial_verts = new Set(mesh.verticesOnFace(face));
+        let halfedges = mesh.edgesOnFace(face);
+        let new_verts = [];
+        for(let he of halfedges)
+        {
+            let old_vertex_pos = he.opposite.vertex.position.clone();
+            let new_vert = mesh.splitEdgeMakeVert(he.vertex, he.opposite.vertex, 0);
+            new_verts.push([new_vert,
+                            old_vertex_pos.clone().sub(new_vert.position)]);
+        }
+        face_wise_new_verts.push(new_verts);
+
+        for(let i=0; i < new_verts.length; i++)
+        {
+            new_faces.push(mesh.splitFaceMakeEdge(face, new_verts[i][0], new_verts[(i+1)%new_verts.length][0]));
+        }
+    }
+
+    for(let f of face_wise_new_verts)
+    {
+        for(let [v, dir] of f)
+        {
+            v.position.addScaledVector(dir, .5)
+        }
+    }
+    if(stop<levels)
+    {
+      console.log(stop);
+      let f =[];
+      for(let _f of faces)
+        f.push(_f.id);
+      
+      for(let _f of new_faces)
+        f.push(_f.id);
+      
+      f = [...new Set(f)];
+      
+      mesh.setSelectedFaces(f);
+    }
+    else
+    {
+      mesh.setSelectedFaces([]);
+    }
+    stop++;
+    
     // ----------- STUDENT CODE END ------------
-    Gui.alertOnce("Triangle subdivide is not implemented yet");
+    // Gui.alertOnce("Triangle subdivide is not implemented yet");
   }
+
 
   mesh.calculateFacesArea();
   mesh.updateNormals();
