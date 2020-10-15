@@ -449,6 +449,8 @@ Filters.truncate = function(mesh, factor) {
     vert_positons.push(vertex.position.clone());
   }
 
+  let vertex_movement_list = [];
+
   for(let i=0; i < verts.length; i++)
   {
       let old_neighbors = mesh.verticesOnVertex(verts[i]);
@@ -464,7 +466,30 @@ Filters.truncate = function(mesh, factor) {
       let old_neighbors_set = new Set(old_neighbors);
       let newly_add_neighbors = [...new_neighbors].filter(x => !old_neighbors_set.has(x));
 
-      console.log(verts[i],newly_add_neighbors);
+    
+      for(let j=0; j<newly_add_neighbors.length; j++) 
+      {
+        newly_add_neighbors[j].position.set( verts[i].position.x, 
+                                             verts[i].position.y, 
+                                             verts[i].position.z);
+
+        if(newly_add_neighbors[j].halfedge.vertex.id === verts[i].id)
+        {
+          vertex_movement_list.push([newly_add_neighbors[j], 
+                      newly_add_neighbors[j].halfedge.opposite.next.vertex.position.clone()
+                          .sub(newly_add_neighbors[j].position)]);
+        }
+
+        else
+        {
+          vertex_movement_list.push([newly_add_neighbors[j],
+                                    newly_add_neighbors[j].halfedge.vertex.position.clone()
+                                        .sub( newly_add_neighbors[j].position)]);
+
+        }
+      }
+
+    //   console.log(verts[i],newly_add_neighbors);
       let halfedge_1 = mesh.edgeBetweenVertices(verts[i], newly_add_neighbors[0]);
       let halfedge_2 = mesh.edgeBetweenVertices(verts[i], newly_add_neighbors[1]);
       
@@ -482,6 +507,11 @@ Filters.truncate = function(mesh, factor) {
       vert_positons[i].addScaledVector(direction_to_move, factor);
   }
 
+  for(let [v, dir] of vertex_movement_list)
+  {
+    // console.log(v, dir);
+    v.position.addScaledVector( dir, factor);
+  }
   for(let i=0; i < verts.length; i++)
   {
     verts[i].position.set(vert_positons[i].x,
