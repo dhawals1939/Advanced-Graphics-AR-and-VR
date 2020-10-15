@@ -611,9 +611,47 @@ Filters.splitLong = function(mesh, factor) {
 Filters.triSubdiv = function(mesh, levels) {
  Filters.triangulate(mesh);
  for (let l = 0; l < levels; l++) {
-    const faces = mesh.getModifiableFaces();
-    // ----------- STUDENT CODE BEGIN ------------
+    const _faces = mesh.getModifiableFaces();
 
+    // ----------- STUDENT CODE BEGIN ----------
+    let faces = [..._faces];
+    let face_old_edges_dest = []
+    for(let face of faces)
+    {
+      halfedges = mesh.edgesOnFace(face);
+      let old_edges_dest = [];
+      for(let halfedge of halfedges)
+      {
+        old_edges_dest.push([halfedge, halfedge.vertex.position.clone()]);
+      }
+      face_old_edges_dest.push(old_edges_dest);
+    }
+
+    for(let i=0; i<face_old_edges_dest.length; i++)
+    {
+      let new_verts = [];
+      for(let [he, v] of face_old_edges_dest[i])
+      {
+        let temp = he.vertex.position.clone().sub(v);
+        // console.log(temp);
+        if(temp.x==0 && temp.y==0 && temp.z==0)
+        {
+          let new_vert = mesh.splitEdgeMakeVert(he.vertex, he.opposite.vertex, .5);
+  
+          new_verts.push([new_vert]);
+        }
+        else{
+          new_verts.push([he.vertex])
+        }
+      }
+
+      for(let v=0; v<new_verts.length; v++)
+      {
+        console.log(faces[i], new_verts[v], new_verts[(v+1)%new_verts.length]);
+        // mesh.splitFaceMakeEdge(faces[i], new_verts[v], new_verts[(v+1)%new_verts.length]);
+      }
+    }
+    mesh.setSelectedFaces([]);
     // ----------- STUDENT CODE END ------------
     // Gui.alertOnce("Triangle subdivide is not implemented yet");
   }
