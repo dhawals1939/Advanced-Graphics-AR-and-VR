@@ -696,6 +696,12 @@ Filters.triSubdiv = function(mesh, levels) {
 
     mesh.setSelectedFaces(to_select_faces);
 
+    if(l+1 == levels)
+    {
+      mesh.setSelectedFaces([]);
+    }
+
+
     // ----------- STUDENT CODE END ------------
     // Gui.alertOnce("Triangle subdivide is not implemented yet");
   }
