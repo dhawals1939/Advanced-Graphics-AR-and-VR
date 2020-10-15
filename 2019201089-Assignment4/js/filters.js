@@ -533,7 +533,51 @@ Filters.bevel = function ( mesh, factor ) {
     var verts = mesh.getModifiableVertices();
 
     // ----------- STUDENT CODE BEGIN ------------
+    this.truncate(mesh, factor);
+    let _faces = mesh.getModifiableFaces();
+
+    _faces = [..._faces]
+    let faces = [];
+    for(let face of _faces)
+    {
+      if(mesh.verticesOnFace(face).length == 3)
+      {
+        faces.push(face);
+      }
+    }
     
+    let new_verts_face = [];
+    for(let face of faces)
+    {
+      let halfedges = mesh.edgesOnFace(face);
+      for(let he of halfedges)
+      {
+        new_verts_face.push([mesh.splitEdgeMakeVert(he.vertex, he.opposite.vertex, .5), he.opposite.face]);
+      }
+    }
+
+    let remove_edge_set = new Set();
+    
+    for(let i = 0; i < new_verts_face.length; i++)
+    {
+      mesh.splitFaceMakeEdge(
+        new_verts_face[i][1],
+        new_verts_face[i][0], 
+        new_verts_face[i][0].halfedge.opposite.next.next.next.vertex
+      );
+
+      remove_edge_set.add(mesh.edgeBetweenVertices(
+        new_verts_face[i][0].halfedge.opposite.next.vertex,
+        new_verts_face[i][0].halfedge.opposite.next.next.vertex)
+      );
+    }
+
+    for(let edge of remove_edge_set) {
+      let v1 = edge.vertex, v2 = edge.opposite.vertex;
+      mesh.joinFaceKillEdge(edge.face, edge.opposite.face, v1, v2);
+      mesh.joinEdgeKillVert(v1.halfedge.vertex, v1, v1.halfedge.opposite.next.vertex)
+    }
+
     // ----------- STUDENT CODE END ------------
     // Gui.alertOnce ('Bevel is not implemented yet');
 
