@@ -137,7 +137,6 @@ Filters.smooth = function(mesh, iter, delta, curvFlow, scaleDep, implicit) {
       {
         new_verts.push(verts[i].position.clone());
 
-        let max_ca = max_cb = -Infinity , min_ca = min_cb = Infinity;
         let sum_of_weighted_neighbors = new THREE.Vector3(), neighbor_weight_sum = .0;
         for(let j in neighbors[i])
         {
@@ -711,19 +710,120 @@ Filters.triSubdiv = function(mesh, levels) {
 
 // Triangulate the mesh and apply loop subdivision to the faces
 // repeat for the specified number of levels.
-Filters.loop = function(mesh, levels) {
-  Filters.triangulate(mesh);
+Filters.loop = function (mesh, levels) {
+    Filters.triangulate(mesh);
+    for(let l=0; l < levels; l++)
+    {
+        const _faces = mesh.getModifiableFaces();
+        // ----------- STUDENT CODE BEGIN ------------
+        let faces = [..._faces];
+        let old_mesh = new Mesh();
+        old_mesh.copy(mesh);
 
-  for (let l = 0; l < levels; l++) {
-    const faces = mesh.getModifiableFaces();
-    // ----------- STUDENT CODE BEGIN ------------
-    // ----------- Our reference solution uses 123 lines of code.
-    // ----------- STUDENT CODE END ------------
-    Gui.alertOnce("Triangle subdivide is not implemented yet");
-  }
+        let old_verts = old_mesh.getModifiableVertices();
+        let old_verts_list = [];
+        for(let old_vert of old_verts)
+        {
+            old_verts_list.push(null);
+        }
 
-  mesh.calculateFacesArea();
-  mesh.updateNormals();
+        for(let old_vert of old_verts)
+        {
+            old_verts_list[old_vert.id] = old_vert;
+        }
+        
+        let face_old_edges_dest = [];
+        for(let face of faces)
+        {
+            halfedges = mesh.edgesOnFace(face);
+            let old_edges_dest = [];
+            for(let halfedge of halfedges)
+            {
+                old_edges_dest.push([halfedge, halfedge.vertex.position.clone()]);
+            }
+            face_old_edges_dest.push(old_edges_dest);
+        }
+
+        let new_faces = [];
+        for(let i=0; i<face_old_edges_dest.length; i++)
+        {
+            let new_verts = [];
+            for(let [he, v] of face_old_edges_dest[i])
+            {
+                let temp = he.vertex.position.clone().sub(v);
+                if(temp.x==0 && temp.y==0 && temp.z==0)
+                {
+                    let new_vert = mesh.splitEdgeMakeVert(he.vertex, he.opposite.vertex, .5);
+                    
+
+                    let old_mesh_edge = old_mesh.edgeBetweenVertices(
+                                                            old_verts[new_vert.halfedge.vertex.id],
+                                                            old_verts[new_vert.halfedge.opposite.next.vertex.id]);
+                    // console.log(old_mesh_edge, old_verts[new_vert.halfedge.vertex.id],
+                    //     old_verts[new_vert.halfedge.opposite.next.vertex.id]);
+                    let lower_wt_vert1 = old_mesh_edge.next.vertex;
+                    let lower_wt_vert2 = old_mesh_edge.opposite.next.vertex;
+                    let higher_wt_vert1 = old_verts[new_vert.halfedge.vertex.id];
+                    let higher_wt_vert2 = old_verts[new_vert.halfedge.opposite.next.vertex.id];
+
+                    let higher_sum = higher_wt_vert1.position.clone().multiplyScalar(3/8).add(
+                        higher_wt_vert2.position.clone().multiplyScalar(3/8)
+                    );
+
+                    let lower_sum = lower_wt_vert1.position.clone().multiplyScalar(1/8).add(
+                        lower_wt_vert2.position.clone().multiplyScalar(1/8)
+                    );
+                    let _new_vert_position = lower_sum.add(higher_sum);
+
+                    new_vert.position.set(_new_vert_position.x,
+                                        _new_vert_position.y,
+                                        _new_vert_position.z);
+
+                    new_verts.push(new_vert);
+                }
+                else{
+                    new_verts.push(he.vertex)
+                }
+            }
+
+            for(let v=0; v<new_verts.length; v++)
+            {
+              new_faces.push(mesh.splitFaceMakeEdge(faces[i], new_verts[v], new_verts[(v+1)%new_verts.length]));
+            }
+        }
+
+        old_verts = old_mesh.getModifiableVertices();
+
+        let new_mesh_verts = mesh.getModifiableVertices();
+
+        // console.log(old_verts.length, new_mesh_verts.length);
+        
+        for(let i=0; i < old_verts.length; i++)
+        {
+            let neighbors = mesh.verticesOnVertex(old_verts[i]);
+            
+            let beta = 3/16;
+            if(neighbors.length > 3)
+            {
+                beta *= 2/neighbors.length;
+            }   
+
+            let _new_position = new THREE.Vector3();
+            for(let neighbor of neighbors)
+            {
+                _new_position.add(neighbor.position.clone().multiplyScalar(beta));
+            }
+
+            _new_position.add(old_verts[i].position.clone().multiplyScalar(1 - beta * neighbors.length));
+
+            new_mesh_verts[i].position.set(_new_position.x,
+                                            _new_position.y,
+                                            _new_position.z);
+        }
+        // ----------- STUDENT CODE END ------------
+    }
+    mesh.calculateFacesArea();
+    mesh.updateNormals();
 };
 
 // Requires a quad mesh. Apply quad subdivision to the faces of the mesh.
