@@ -731,7 +731,7 @@ Filters.loop = function (mesh, levels) {
         {
             old_verts_list[old_vert.id] = old_vert;
         }
-        
+
         let face_old_edges_dest = [];
         for(let face of faces)
         {
@@ -759,8 +759,6 @@ Filters.loop = function (mesh, levels) {
                     let old_mesh_edge = old_mesh.edgeBetweenVertices(
                                                             old_verts[new_vert.halfedge.vertex.id],
                                                             old_verts[new_vert.halfedge.opposite.next.vertex.id]);
-                    // console.log(old_mesh_edge, old_verts[new_vert.halfedge.vertex.id],
-                    //     old_verts[new_vert.halfedge.opposite.next.vertex.id]);
                     let lower_wt_vert1 = old_mesh_edge.next.vertex;
                     let lower_wt_vert2 = old_mesh_edge.opposite.next.vertex;
                     let higher_wt_vert1 = old_verts[new_vert.halfedge.vertex.id];
@@ -795,8 +793,6 @@ Filters.loop = function (mesh, levels) {
         old_verts = old_mesh.getModifiableVertices();
 
         let new_mesh_verts = mesh.getModifiableVertices();
-
-        // console.log(old_verts.length, new_mesh_verts.length);
         
         for(let i=0; i < old_verts.length; i++)
         {
